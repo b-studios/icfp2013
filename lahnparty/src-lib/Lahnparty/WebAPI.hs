@@ -62,6 +62,9 @@ data GuessResponse =
 
 -- ** Submitting a Training Request
 
+data TrainOps = TrainNone | TrainFold | TrainTFold
+  deriving (Eq,Show)
+
 -- | Send a request for an arbitrary training problem.
 trainRequest :: IO (Response TrainingProblem)
 trainRequest = performRequest "train" (TrainRequest Nothing Nothing)
@@ -72,10 +75,12 @@ trainRequestSize n = performRequest "train" (TrainRequest (Just n) Nothing)
 
 -- | Send a request for a training problem of a specified size
 --   with specified ops.
-trainRequestSizeOps :: Int -> [Op1] -> [Op2] -> IO (Response TrainingProblem)
-trainRequestSizeOps n op1s op2s =
+trainRequestSizeOps :: Int -> TrainOps -> IO (Response TrainingProblem)
+trainRequestSizeOps n fold =
     performRequest "train" (TrainRequest (Just n) (Just ops))
-  where ops = map show op1s ++ map show op2s
+  where ops = case fold of TrainNone  -> []
+                           TrainFold  -> ["fold"]
+                           TrainTFold -> ["tfold"]
 
 -- TODO: Parse program string and op lists?
 data TrainingProblem = TrainingProblem String ProblemID Int [String]

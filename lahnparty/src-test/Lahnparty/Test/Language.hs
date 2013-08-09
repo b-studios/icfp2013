@@ -13,6 +13,11 @@ import Lahnparty.Language
 
 main = defaultMain tests
 
+testPP :: P -> String -> Test
+testPP e s = testCase s $ assertEqual "" (show e) s
+
+
+
 testEval :: P -> [Word64] -> [Word64] -> Test
 testEval p inputs outputs = testGroup (show p)
   [ testCase (showHex input . showString " -> " . showHex output $ "") $
@@ -21,7 +26,24 @@ testEval p inputs outputs = testGroup (show p)
   | output <- outputs
   ]
 
-tests =
+tests = evalTests ++ ppTests
+
+ppTests = [ testPP (Lambda (Op2 And (Id Input) (Op1 Shr16 (Id Input)))) "(lambda (input) (and input (shr16 input)))"
+          , testPP (Lambda (Op1 Not Zero)) "(lambda (input) (not 0))"
+          , testPP (Lambda (Op1 Shl1 One)) "(lambda (input) (shl1 1))"
+          , testPP (Lambda (Op1 Shr1 (Id Input))) "(lambda (input) (shr1 input))"
+          , testPP (Lambda (Op1 Shr4 Zero)) "(lambda (input) (shr4 0))"
+          , testPP (Lambda (Op1 Shr16 One)) "(lambda (input) (shr16 1))"
+          , testPP (Lambda (Op2 And Zero One)) "(lambda (input) (and 0 1))"
+          , testPP (Lambda (Op2 Or One Zero)) "(lambda (input) (or 1 0))"
+          , testPP (Lambda (Op2 Xor (Id Acc) (Id Byte))) "(lambda (input) (xor acc byte))"
+          , testPP (Lambda (Op2 Plus Zero (Id Input))) "(lambda (input) (plus 0 input))"
+          , testPP (Lambda (If0 Zero One (Id Input))) "(lambda (input) (if0 0 1 input))"
+          , testPP (Lambda (Fold (Id Input) Zero (Id Acc))) "(lambda (input) (fold input 0 (lambda (byte acc) acc)))"
+          ]
+
+
+evalTests =
   -- test bitwise and (from operators/and.txt)
   [ testEval (Lambda (Op2 And (Id Input) (Op1 Shr16 (Id Input))))
     -- inputs for testing bitwise and
