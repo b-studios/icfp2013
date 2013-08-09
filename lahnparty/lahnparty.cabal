@@ -18,6 +18,7 @@ library
   hs-source-dirs:      src-lib
   exposed-modules:     Lahnparty.Language,
                        Lahnparty.Generator1,
+                       Lahnparty.Generator2,
                        Lahnparty.WebAPI
   build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, mtl, containers
 
