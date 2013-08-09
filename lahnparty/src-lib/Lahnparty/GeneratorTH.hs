@@ -52,7 +52,7 @@ findP size ops =
      -- assertFalse (OpFold `elem` ops)
 
      -- XXX This findE should produce a fold at the top level
-     map Lambda $ findE (size - 1) (delete OpTFold ops) False False
+     map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
    else
      map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
 
