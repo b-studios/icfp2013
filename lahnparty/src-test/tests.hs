@@ -2161,4 +2161,14 @@ tests =
     , 0x8C33BCBFBFFDBF51
     ]
 
+  -- test plus (from operators/plus-on-all-ones.txt
+  , testEval (Lambda (Op2 Plus (Id Input) (Id Input)))
+    -- input for testing plus
+    [ 0xFFFFFFFFFFFFFFFF
+    ]
+
+    -- output for testing plus
+    [ 0xFFFFFFFFFFFFFFFE
+    ]
+
   ]
