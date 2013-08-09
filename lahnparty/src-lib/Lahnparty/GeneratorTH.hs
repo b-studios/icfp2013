@@ -126,3 +126,9 @@ findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])             
                                                 e2 /= (Id Input),
                                                 e0 <- findE i newops False False,
                                                 e1 <- findE j newops False False]
+
+-- number of generated programs for given size using all operators:
+-- size  7:    379164
+-- size  8:   3278604
+-- size  9:  30308787
+-- size 10: 276005523
