@@ -10,13 +10,12 @@ import Network.HTTP (ResponseCode,postRequestWithBody,simpleHTTP)
 import qualified Network.HTTP as HTTP
 
 import Lahnparty.Language
+import Lahnparty.Types
 
 
 --
 -- * Public Interface
 --
-
-type ProblemID = String
 
 -- | Generic response to a request. Separates the various kinds of errors.
 data Response a =
@@ -47,7 +46,7 @@ data EvalResponse =
 
 -- | Send a guess request.
 guessRequest :: ProblemID -> P -> IO (Response GuessResponse)
-guessRequest id p = performRequest "guess" (Guess id (prettyP p))
+guessRequest id = guessRequestString id . prettyP
 
 -- | Send a guess request with a program represented as a string.
 guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)

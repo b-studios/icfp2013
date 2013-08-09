@@ -1,8 +1,7 @@
 module Lahnparty.ProblemsDB where
 
-import Lahnparty.GeneratorTH
 import Lahnparty.Language
-import Lahnparty.WebAPI
+import Lahnparty.Types
 
 fetchData :: ProblemID -> (Size, [Op])
 
