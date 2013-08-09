@@ -8,7 +8,7 @@ import Lahnparty.Types
 import Control.Monad
 
 -- XXX disable in production, it changes memory usage
-expensiveDebug = True
+expensiveDebug = False
 
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
@@ -357,5 +357,5 @@ main = do
 -}
 
 main = do
-  (probId, size, ops) <- fetchTrainingData 5
+  (probId, size, ops) <- fetchTrainingData 15
   driver findP probId size ops
