@@ -14,7 +14,7 @@ import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
 
 -- Time to wait between problems in seconds.
-wait = 10
+wait = 3
 
 solveProblemsOfSize :: Generator -> Int -> IO ()
 solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
@@ -27,4 +27,4 @@ solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
 solveProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
 solveProblemsOfSizeFromTo g from to = mapM_ (solveProblemsOfSize g) [from .. to]
 
-main = solveProblemsOfSizeFromTo findP 3 3
+main = solveProblemsOfSizeFromTo findP 4 4
