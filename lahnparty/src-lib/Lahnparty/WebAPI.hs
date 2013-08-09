@@ -7,6 +7,8 @@ import Numeric
 import Data.Word
 import Text.JSON
 
+import Lahnparty.Language
+
 
 --
 -- * Helper Functions
@@ -22,14 +24,21 @@ lookupOpt :: JSON a => [(String, JSValue)] -> String -> Result (Maybe a)
 lookupOpt m k | Just v <- lookup k m = fmap Just (readJSON v)
               | otherwise            = Ok Nothing
 
+-- generate an optional field for a JSON object
 optField :: JSON a => String -> Maybe a -> [(String,JSValue)]
 optField k (Just a) = [(k, showJSON a)]
 optField _ _        = []
+
+-- convert unsigned 64 bit int to hex string
+toHex :: Word64 -> String
+toHex w = "0x" ++ showHex w ""
 
 
 --
 -- * JSON Spec
 --
+
+-- ** Problem
 
 data Problem = Problem {
   problem_id        :: String,     -- problem ID
@@ -49,7 +58,7 @@ instance JSON Problem where
       time <- lookupOpt m "timeLeft"
       return (Problem id size ops sol time)
     where m = fromJSObject o
-  readJSON _ = Error ""
+  readJSON _ = Error "Error reading Problem (not JSObject)."
   
   showJSON (Problem id size ops sol time) =
       JSObject $ toJSObject $ [
@@ -58,6 +67,8 @@ instance JSON Problem where
         ("operators", showJSON ops)
       ] ++ optField "solved" sol ++ optField "timeLeft" time
 
+
+-- ** EvalRequest
 
 -- There are two kinds of eval requests:
 --   1. request the results of solution for up to 256 arguments
@@ -75,32 +86,110 @@ instance JSON EvalRequest where
       args <- lookupReq m "arguments" >>= return . map read
       return (EvalRequest id args)
     where m = fromJSObject o
+  readJSON _ = Error "Error reading EvalRequest (not JSObject)."
 
   showJSON (EvalRequest id args) =
-      JSObject $ toJSObject $ [
+      JSObject $ toJSObject [
         ("id", showJSON id),
         ("arguments", showJSON (map toHex args))
       ]
-    where toHex w = "0x" ++ showHex w ""
     
 
-data EvalResponse = EvalResponse {
-  evalResponse_status  :: String,
-  evalResponse_outputs :: [String],  
-  evalResponse_message :: String
-}
+-- ** EvalResponse
+
+data EvalResponse = 
+    EvalResponseOK    { evalResponse_outputs :: [Word64] }
+  | EvalResponseError { evalResponse_message :: String }
+  deriving (Eq,Show)
+
+instance JSON EvalResponse where
+  
+  readJSON (JSObject o) = do
+      status <- lookupReq m "status"
+      if status == "ok" then do
+        outs <- lookupReq m "outputs" >>= return . map read
+        return (EvalResponseOK outs)
+      else do
+        msg <- lookupReq m "message"
+        return (EvalResponseError msg)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading EvalResponse (not JSObject)."
+
+  showJSON (EvalResponseOK outs) =
+    JSObject $ toJSObject [
+      ("status", showJSON "ok"),
+      ("outputs", showJSON (map toHex outs))
+    ]
+  showJSON (EvalResponseError msg) =
+    JSObject $ toJSObject [
+      ("status", showJSON "error"),
+      ("outputs", showJSON msg)
+    ]
+
+
+-- ** Guess
 
 data Guess = Guess {
   guess_id      :: String,
   guess_program :: String
 }
 
-data GuessResponse = GuessResponse {
-  guessResponse_status    :: String,
-  guessResponse_values    :: [String],
-  guessResponse_message   :: String,
-  guessResponse_lightning :: Bool
-}
+instance JSON Guess where
+  
+  readJSON (JSObject o) = do
+      id   <- lookupReq m "id"
+      prog <- lookupReq m "program"
+      return (Guess id prog)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading Guess (not JSObject)."
+  
+  showJSON (Guess id prog) =
+      JSObject $ toJSObject $ [
+        ("id", showJSON id),
+        ("program", showJSON prog)
+      ]
+
+
+-- ** GuessResponse
+
+data GuessResponse =
+    GuessResponseWin
+  | GuessResponseMismatch { guessResponse_values :: [Word64] }
+  | GuessResponseError    { guessResponse_message :: String }
+  deriving (Eq,Show)
+
+instance JSON GuessResponse where
+  
+  readJSON (JSObject o) = do
+      status <- lookupReq m "status"
+      case status of
+        "win" -> return GuessResponseWin
+        "mismatch" -> do
+          vals <- lookupReq m "values" >>= return . map read
+          return (GuessResponseMismatch vals)
+        otherwise -> do
+          msg <- lookupReq m "message"
+          return (GuessResponseError msg)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading GuessResponse (not JSObject)."
+  
+  showJSON GuessResponseWin =
+    JSObject $ toJSObject [
+      ("status", showJSON "win")
+    ]
+  showJSON (GuessResponseMismatch vals) =
+    JSObject $ toJSObject [
+      ("status", showJSON "mismatch"),
+      ("values", showJSON (map toHex vals))
+    ]
+  showJSON (GuessResponseError msg) =
+    JSObject $ toJSObject [
+      ("status", showJSON "error"),
+      ("values", showJSON msg)
+    ]
+
+
+{-
 
 data TrainRequest = TrainRequest {
   trainRequiest_size      :: Int,
@@ -113,8 +202,6 @@ data TrainingProblem = TrainingProblem {
   trainingProblem_size      :: Int,
   trainingProblem_operators :: [String]
 }
-
-{-
 
 data Status = Status {
   status_easyChairId    :: Int,
