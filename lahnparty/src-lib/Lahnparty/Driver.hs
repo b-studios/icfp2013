@@ -1,5 +1,7 @@
 module Lahnparty.Driver where
 
+import Control.Concurrent (threadDelay)
+
 import Lahnparty.Language
 import Lahnparty.WebAPI
 import Lahnparty.GeneratorTH
@@ -44,6 +46,12 @@ driver gen probId size ops =
         mapM_ print $ take 10 programsFilt
 
         getMoreInfo probId programsFilt
+      
+      HTTPError (4,2,9) _ -> do
+        putStrLn "Too many requests, trying again."
+        threadDelay 5000000 -- 5 seconds
+        driver gen probId size ops
+      
       err -> do
         unexpected err probId
 
@@ -67,6 +75,11 @@ getMoreInfo probId (p: programs) = do
       let programsFilt = filterProgs programs [words !! 0] [words !! 1]
       putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length programsFilt)
       getMoreInfo probId programsFilt
+
+    HTTPError (4,2,9) _ -> do
+      putStrLn "Too many requests, trying again."
+      threadDelay 5000000 -- 5 seconds
+      getMoreInfo probId programs
     err ->
       unexpected err probId
 
