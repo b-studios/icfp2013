@@ -12,9 +12,11 @@ data Id =
 
   -- | The current accumulator (second variable bound by lambda in fold).
   | Acc
+    deriving (Show, Eq)
 
 data P
   = Lambda E
+    deriving (Show, Eq)
 
 data E
   = Zero
@@ -24,9 +26,13 @@ data E
   | Fold E E E
   | Op1 Op1 E
   | Op2 Op2 E E
+    deriving (Show, Eq)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
+    deriving (Show, Eq)
+
 data Op2 = And | Or | Xor | Plus
+    deriving (Show, Eq)
 
 -- | Size of programs.
 
