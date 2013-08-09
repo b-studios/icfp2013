@@ -10,11 +10,6 @@ type Size = Int
 type InFold = Bool
 type MustFold = Bool
 
-data Op = OpOp1 Op1
-        | OpOp2 Op2
-        | OpIf0
-        | OpFold deriving (Show, Eq, Ord)
-
 isOp1 :: Op -> Bool
 isOp1 (OpOp1 _) = True
 isOp1 _ = False
@@ -41,6 +36,21 @@ weight _ = 1
 
 generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
+
+
+type Generator = Size -> [Op] -> [P]
+
+findP :: Generator
+findP size ops =
+  if OpTFold `elem` ops
+   then
+     -- assertFalse (OpFold `elem` ops)
+
+     -- XXX This findE should produce a fold at the top level
+     map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
+   else
+     map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
+
 
 
 -- | Generates expressions of given size using (a subset) of given operators. 
@@ -95,10 +105,24 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                               e1 <- findE j ops infold False,
                                               e2 <- findE k ops infold False]
     gen OpFold      = if mustfold 
-                        then [ Fold e0 e1 e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
+                        then (if (n==5) then [Zero, One, Id Input] else [])                     -- prune: fold with constant function reduces to constant
+                          ++ [ Fold e0 e1 e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
                                                 let newops = delete OpFold ops,
+                                                e2 <- findE k newops True  False,   -- e2 before e0 and e1 to prune on it
+                                                e2 /= Zero,
+                                                e2 /= One,
+                                                e2 /= (Id Input),
                                                 e0 <- findE i newops False False,
-                                                e1 <- findE j newops False False,
-                                                e2 <- findE k newops True  False]
+                                                e1 <- findE j newops False False]
                         else []
 
+findETopFold :: Size -> [Op] -> [E]
+findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])                     -- prune: fold with constant function (0, 1, input) reduces to constant
+                       ++ [ Fold e0 e1 e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
+                                                let newops = delete OpFold ops,
+                                                e2 <- findE k newops True  False,   -- e2 before e0 and e1 to prune on it
+                                                e2 /= Zero,
+                                                e2 /= One,
+                                                e2 /= (Id Input),
+                                                e0 <- findE i newops False False,
+                                                e1 <- findE j newops False False]

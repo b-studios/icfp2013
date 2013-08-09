@@ -19,7 +19,11 @@ library
   exposed-modules:     Lahnparty.Language,
                        Lahnparty.Generator1,
                        Lahnparty.Generator2,
-                       Lahnparty.WebAPI
+                       Lahnparty.GeneratorTH,
+                       Lahnparty.WebAPI,
+                       Lahnparty.ProblemsDB,
+                       Lahnparty.Driver
+
   build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, mtl, containers
 
 executable lahnparty-interpreter
@@ -33,7 +37,7 @@ test-suite lahnparty-tests
   Hs-source-dirs:      src-test
   Main-is:             tests.hs
   Build-depends:       lahnparty,
-                       base ==4.6.*,
+                       base >=4.5,
                        test-framework,
                        test-framework-hunit,
                        HUnit
