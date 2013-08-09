@@ -5,6 +5,7 @@ import Lahnparty.WebAPI
 import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
+import Control.Monad
 
 -- XXX disable in production, it changes memory usage
 expensiveDebug = True
@@ -13,7 +14,7 @@ driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
   do
     let programs = gen size ops
-    if (expensiveDebug)
+    when expensiveDebug $
        putStrLn $ "# generated programs: " ++ show (length programs)
     putStrLn $ "First 10 generated programs:"
 
@@ -24,7 +25,7 @@ driver gen probId size ops =
     case result of
       OK (EvalResponseOK outputs) -> do
         let programsFilt = filterProgs programs inputs outputs
-        if (expensiveDebug)
+        when expensiveDebug $
            putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
 
         putStrLn $ "First 10 generated programs after filtering:"
@@ -70,7 +71,8 @@ randomInputs programs = [0 .. 255]
 
 fetchTrainingData :: Size -> IO (ProblemID, Size, [Op])
 fetchTrainingData size = do
-  OK (TrainingProblem _ id size operators) <- trainRequestSize size
+  req @ (OK (TrainingProblem program id size operators)) <- trainRequestSize size
+  print req
   return (id, size, map opStringToOp operators)
 
 opStringToOp "if0" = OpIf0
