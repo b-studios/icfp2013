@@ -107,6 +107,7 @@ prettyP (Lambda e) = "(lambda (" ++ prettyId Input ++ ") " ++ prettyE e ++ ")"
 prettyE :: E -> String
 prettyE Zero            = "0"
 prettyE One             = "1"
+prettyE (Id x)          = prettyId x
 prettyE (If0  e1 e2 e3) = "(if0 "  ++ prettyE e1 ++ " " 
                                    ++ prettyE e2 ++ " "
                                    ++ prettyE e3 ++ ")"
