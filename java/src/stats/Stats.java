@@ -1,6 +1,9 @@
 package stats;
 
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -77,6 +80,8 @@ public class Stats {
 		//System.out.format("ByOperator: %s", byOperator(myproblems));
 		
 		// populateDatabase(myproblems);
+		
+		generateHaskellData(myproblems, "../myproblems.hs");
 	}
 	
 	public static void populateDatabase(List<ProblemMetadata> problems) throws SQLException {
@@ -146,6 +151,21 @@ public class Stats {
 		
 		printBySizeTreeMap(filter(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"), new ExcludesOpFilter(), "tfold"));
 		
+	}
+	
+	public static void generateHaskellData(List<ProblemMetadata> problems, String filename) throws FileNotFoundException, UnsupportedEncodingException {
+		PrintWriter writer = new PrintWriter(filename, "UTF-8");
+		for (ProblemMetadata problem : problems) {
+			writer.write("fetchData \"" + problem.id + "\" = (" + problem.size + ", [");
+			for (String operator : problem.operators) {
+				if (!operator.equals(problem.operators.get(0))) {
+					writer.write(", ");
+				}
+				writer.write("\"" + operator + "\"");
+			}
+			writer.write("])\n");
+		}
+		writer.close();
 	}
 	
 	public static void printBySizeTreeMap(TreeMap<Integer, List<ProblemMetadata>> tm) {
