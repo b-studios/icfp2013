@@ -1,3 +1,6 @@
+#!/usr/bin/ruby
+
+require "rubygems"
 require "thor"
 require "uri"
 require "net/http"
@@ -17,8 +20,8 @@ class IcfpCli < Thor
   def eval(program, *args)
 
     puts performRequest('eval', {
-      program: program,
-      arguments: args
+      :program => program,
+      :arguments => args
     })
   end
 
@@ -26,8 +29,8 @@ class IcfpCli < Thor
   def evalid(id, *args)
 
     puts performRequest('eval', {
-      id: id,
-      arguments: args
+      :id => id,
+      :arguments => args
     })
   end
 
@@ -35,8 +38,8 @@ class IcfpCli < Thor
   def guess(id, program)
 
     puts performRequest('guess', {
-      id: id,
-      program: program
+      :id => id,
+      :program => program
     })
   end
 
