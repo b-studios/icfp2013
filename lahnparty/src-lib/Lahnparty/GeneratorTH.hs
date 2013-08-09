@@ -54,7 +54,7 @@ findP size ops =
 
 
 -- | Generates expressions of given size using (a subset) of given operators. 
---   May omit expressions that have shorter equivalents (but currently does not).
+--   May omit expressions that have shorter equivalents.
 --   Fold will only be used if the flag mustfold is set; but if the flag is set it will definitely be used.
 --   (It must still be present in the  oplist).
 findE :: Size -> [Op] -> InFold -> MustFold -> [E]
