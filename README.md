@@ -2,6 +2,11 @@
 
 about 2000 problems in total
 
+doing "myproblems" request returns identical problem set all the time
+
+server accepts functionally equivalent programs whose size or operators
+may be different from those in the problem description
+
 
 ------------
 Link to play.html (beware: it can send real requests!)
