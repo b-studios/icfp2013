@@ -40,6 +40,7 @@ instance Arbitrary Op2 where
   arbitrary = elements [And, Or, Xor, Plus]
 
 constantE = elements [Zero, One]
+
 arbitraryVariable = Id <$> arbitrary
 
 arbitraryFoldParam arbOp = Fold <$> arbitrary <*> arbitrary <*> arbOp
@@ -61,7 +62,6 @@ instance Arbitrary E where
   arbitrary =
     oneof
     (arbitraryFirstOrderProgGens ++ [ Fold <$> arbitrary <*> arbitrary <*> arbitrary ])
-
 
 instance Arbitrary (State Params E) where
   arbitrary =
