@@ -16,8 +16,8 @@ cabal-version:       >=1.8
 
 library
   hs-source-dirs:      src-lib
-  exposed-modules:     Lahnparty.Language
-  build-depends:       base >= 4.5
+  exposed-modules:     Lahnparty.Language, Lahnparty.Generator1
+  build-depends:       base >= 4.5, QuickCheck, random
 
 executable lahnparty-interpreter
   hs-source-dirs:      src-exec
