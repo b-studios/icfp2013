@@ -6,7 +6,6 @@ import Data.Word (Word64)
 
 type Argument = Word64
 type Result = Word64
-type Size = Int
 type InFold = Bool
 type MustFold = Bool
 
