@@ -31,8 +31,7 @@ getMoreInfo probId (p: programs) = do
       putStrLn "What?"
       getMoreInfo probId programs
     Ok (GuessResponseMismatch words) ->
-      -- XXX Not really what we want
-      getMoreInfo probId programs
+      getMoreInfo probId $ filterProgs programs [words !! 0] [words !! 1]
 
 filterProgs programs inputs outputs =
   [ program | program <- programs,
