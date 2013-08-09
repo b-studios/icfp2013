@@ -1,5 +1,5 @@
 module Main where
 
-import qualified Lahnparty.Driver as D
+import qualified Lahnparty.Showtime as M
 
-main = D.main
+main = M.main
