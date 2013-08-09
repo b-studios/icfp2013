@@ -1,3 +1,6 @@
+(Tentative) description: plus on two's complement numbers (which is the same as
+plus).
+But we didn't verify automatically that all input-output pairs match.
 
 {"program":"(lambda (x) (plus x (shr16 x)))",
 "arguments":[
