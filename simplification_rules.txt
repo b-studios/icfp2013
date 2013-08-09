@@ -7,9 +7,9 @@ possible simplification rules:
 
 not (not e) -> e
 
-fold e0 e1 0 -> 0
-fold e0 e1 1 -> 1
-fold e0 e1 input -> input
+fold e0 e1 0 -> 0 ...implemented
+fold e0 e1 1 -> 1 ...implemented
+fold e0 e1 input -> input ...implemented
 
 if0 0 e1 e2 -> e1 ..implemented
 if0 1 e1 e2 -> e2 ..implemented
