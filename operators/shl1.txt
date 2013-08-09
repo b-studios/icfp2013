@@ -1,3 +1,5 @@
+(Tentative) Description: shift left by 1 bit.
+
 {"program":"(lambda (x) (shl1 x))",
 "arguments":[
 "0x0000000000000000",

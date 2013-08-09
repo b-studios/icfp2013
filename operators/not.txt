@@ -1,3 +1,4 @@
+(Tentative) Description: bitwise not
 
 {"program":"(lambda (x) (not x))",
 "arguments":[
