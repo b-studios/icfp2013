@@ -81,7 +81,7 @@ public class Stats {
 		
 		// populateDatabase(myproblems);
 		
-		generateHaskellData(myproblems, "../myproblems.hs");
+		generateListFromSizeToId(myproblems, "../sizeToProblems.hs");
 	}
 	
 	public static void populateDatabase(List<ProblemMetadata> problems) throws SQLException {
@@ -152,6 +152,23 @@ public class Stats {
 		printBySizeTreeMap(filter(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"), new ExcludesOpFilter(), "tfold"));
 		
 	}
+	
+	public static void generateListFromSizeToId(List<ProblemMetadata> problems, String filename) throws FileNotFoundException, UnsupportedEncodingException {
+		PrintWriter writer = new PrintWriter(filename, "UTF-8");
+		TreeMap<Integer, List<ProblemMetadata>> bysize = bySize(problems);
+		for (Integer size : bySize(problems).keySet()) {
+			writer.write("sizeToIds " + size + " = [");
+			for (ProblemMetadata problem : bysize.get(size)) {
+				if (problem.id != (bysize.get(size).get(0).id)) {
+					writer.write(", ");
+				}
+				writer.write("\"" + problem.id + "\"");
+			}
+			writer.write("]\n");
+		}
+		writer.close();
+	}
+
 	
 	public static void generateHaskellData(List<ProblemMetadata> problems, String filename) throws FileNotFoundException, UnsupportedEncodingException {
 		PrintWriter writer = new PrintWriter(filename, "UTF-8");
