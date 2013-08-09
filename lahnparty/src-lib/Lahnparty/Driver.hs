@@ -7,8 +7,6 @@ import Lahnparty.ProblemsDB
 
 import Text.JSON
 
-type Generator = Size -> [Op] -> [P]
-
 driver :: Generator -> ProblemID -> IO ()
 driver gen probId =
   do

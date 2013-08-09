@@ -43,6 +43,21 @@ generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
 
 
+type Generator = Size -> [Op] -> [P]
+
+findP :: Generator
+findP size ops =
+  if OpTFold `elem` ops
+   then
+     -- assertFalse (OpFold `elem` ops)
+
+     -- XXX This findE should produce a fold at the top level
+     map Lambda $ findE (size - 1) (delete OpTFold ops) False False
+   else
+     map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
+
+
+
 -- | Generates expressions of given size using (a subset) of given operators. 
 --   May omit expressions that have shorter equivalents (but currently does not).
 --   Fold will only be used if the flag mustfold is set; but if the flag is set it will definitely be used.
