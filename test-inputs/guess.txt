@@ -1,0 +1,16 @@
+Request body for /guess, to be used as many times as needed to test web interface
+
+{"id":"cVBdX88Lz74jTfLTSj2YseZW",
+"program":"(lambda (x) x)"}
+
+Result: success
+Content:
+
+{
+    "status": "mismatch",
+    "values": [
+        "0x0000000000200000",
+        "0x0000000000000000",
+        "0x0000000000200000"
+    ]
+}
