@@ -22,7 +22,8 @@ library
                        Lahnparty.GeneratorTH,
                        Lahnparty.WebAPI,
                        Lahnparty.ProblemsDB,
-                       Lahnparty.Driver
+                       Lahnparty.Driver,
+                       Lahnparty.Types
 
   build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, mtl, containers
 
