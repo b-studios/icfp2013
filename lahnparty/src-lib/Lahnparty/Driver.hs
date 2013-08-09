@@ -44,16 +44,25 @@ filterProgs programs inputs outputs =
 
 randomInputs programs = [0 .. 255]
 
+fetchTrainingData :: Size -> IO (ProblemID, Size, [Op])
+fetchTrainingData size = do
+  OK (TrainingProblem _ id size operators) <- trainRequestSize size
+  return (id, size, map opStringToOp operators)
+
+opStringToOp "if0" = OpIf0
+opStringToOp "fold" = OpFold
+opStringToOp "tfold" = OpTFold
+opStringToOp "not" = OpOp1 Not
+opStringToOp "shl1" = OpOp1 Shl1
+opStringToOp "shr1" = OpOp1 Shr1
+opStringToOp "shr4" = OpOp1 Shr4
+opStringToOp "shr16" = OpOp1 Shr16
+opStringToOp "and" = OpOp2 And
+opStringToOp "or" = OpOp2 Or
+opStringToOp "xor" = OpOp2 Xor
+opStringToOp "plus" = OpOp2 Plus
 
 main = do
-  let size = 5
-
-  -- trainRequestSizeOps size [] []
--- > Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
-
-  -- let (size, ops) = fetchData probId
-
-  let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
-  let ops = [OpOp1 Not, OpOp2 Plus]
+  (probId, size, ops) <- fetchTrainingData 5
   driver findP probId size ops
 
