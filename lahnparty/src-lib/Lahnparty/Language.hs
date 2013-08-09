@@ -3,7 +3,7 @@ module Lahnparty.Language where
 import Data.Bits
 import Data.Word (Word64)
 
-data Id = Input | FoldBase | FoldStep
+data Id = Input | Byte | Acc
 
 data P
   = Lambda E
@@ -45,24 +45,24 @@ evalP input (Lambda e) =
 -- | Evaluate expressions.
 
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
-evalE input foldBase foldStep Zero = 0
-evalE input foldBase foldStep One = 1
-evalE input foldBase foldStep (Id Input) = input
-evalE input foldBase foldStep (Id FoldBase) = foldBase
-evalE input foldBase foldStep (Id FoldStep) = foldStep
-evalE input foldBase foldStep (If0 e1 e2 e3) =
-  if evalE input foldBase foldStep e1 == 0
-    then evalE input foldBase foldStep e2
-    else evalE input foldBase foldStep e3
-evalE input foldBase foldStep (Fold e0 e1 e2) = foldr f initial values
+evalE input byte acc Zero = 0
+evalE input byte acc One = 1
+evalE input byte acc (Id Input) = input
+evalE input byte acc (Id Byte) = byte
+evalE input byte acc (Id Acc) = acc
+evalE input byte acc (If0 e1 e2 e3) =
+  if evalE input byte acc e1 == 0
+    then evalE input byte acc e2
+    else evalE input byte acc e3
+evalE input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
-    values = listOfFoldedValues (evalE input foldBase foldStep e0)
-    initial = evalE input foldBase foldStep e1
+    values = listOfFoldedValues (evalE input byte acc e0)
+    initial = evalE input byte acc e1
     f x y = evalE input x y e2
-evalE input foldBase foldStep (Op1 op1 e1) =
-  evalOp1 op1 (evalE input foldBase foldStep e1)
-evalE input foldBase foldStep (Op2 op2 e1 e2) =
-  evalOp2 op2 (evalE input foldBase foldStep e1) (evalE input foldBase foldStep e2)
+evalE input byte acc (Op1 op1 e1) =
+  evalOp1 op1 (evalE input byte acc e1)
+evalE input byte acc (Op2 op2 e1 e2) =
+  evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
 
 evalOp1 :: Op1 -> Word64 -> Word64
 evalOp1 Not = complement
