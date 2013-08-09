@@ -1,5 +1,5 @@
 module Main where
 
-import Language
+import Lahnparty.Language
 
 main = putStrLn "hello world"

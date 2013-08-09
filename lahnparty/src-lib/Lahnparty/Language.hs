@@ -1,4 +1,4 @@
-module Language where
+module Lahnparty.Language where
 
 import Data.Bits
 import Data.Word (Word64)

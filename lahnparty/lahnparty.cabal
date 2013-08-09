@@ -16,7 +16,7 @@ cabal-version:       >=1.8
 
 library
   hs-source-dirs:      src-lib
-  exposed-modules:     Language
+  exposed-modules:     Lahnparty.Language
   build-depends:       base ==4.6.*
 
 executable lahnparty-interpreter
