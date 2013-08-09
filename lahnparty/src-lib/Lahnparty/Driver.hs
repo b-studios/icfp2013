@@ -383,5 +383,5 @@ main = do
 -}
 
 main = do
-  (probId, size, ops) <- fetchTrainingData 15
+  (probId, size, ops) <- fetchTrainingData 8
   driver findP probId size ops
