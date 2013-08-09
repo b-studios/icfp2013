@@ -16,5 +16,5 @@ cabal-version:       >=1.8
 
 executable interpreter
   main-is:             interpreter.hs
-  -- other-modules:       
+  other-modules:       Language
   build-depends:       base ==4.6.*
