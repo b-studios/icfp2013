@@ -1,3 +1,5 @@
+(Tentative) Description: shift right by 1 bit. The shift is logical (that is, on
+unsigned numbers).
 
 {"program":"(lambda (x) (shr1 x))",
 "arguments":[
