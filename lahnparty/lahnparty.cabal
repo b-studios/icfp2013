@@ -19,7 +19,7 @@ library
   exposed-modules:     Lahnparty.Language,
                        Lahnparty.Generator1,
                        Lahnparty.WebAPI
-  build-depends:       base >= 4.5, json, QuickCheck, random
+  build-depends:       base >= 4.5, json, QuickCheck, random, mtl, containers
 
 executable lahnparty-interpreter
   hs-source-dirs:      src-exec

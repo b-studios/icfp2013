@@ -1,16 +1,37 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Lahnparty.Generator1 where
 
 import Lahnparty.Language
 import Test.QuickCheck
 import Control.Applicative
 
-import System.Random
+import qualified Data.Set as S
+import Data.Set (Set)
+import Control.Monad.State
+
+-- import System.Random
 
 -- Untested,
 -- Minimal QuickCheck generator
 
+
+data Operator = Oper1 (Set Op1)
+              | Oper2 (Set Op2)
+              | OperIf0
+              | OperFold
+              | OperTFold
+                deriving (Eq, Ord)
+
+data Params = Params { ops :: Set Operator
+                     , inFold :: Bool
+                     }
+
 instance Arbitrary Id where
   arbitrary = elements [Input, Byte, Acc]
+
+instance Arbitrary (State Params Id) where
+  arbitrary = promote $
+            elements <$> ((\x -> [Input] ++ if (inFold x) then [Byte, Acc] else []) <$> get)
 
 instance Arbitrary Op1 where
   arbitrary = elements [Not, Shl1, Shr1, Shr4, Shr16]
