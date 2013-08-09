@@ -29,10 +29,10 @@ data E
     deriving (Show, Eq)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 data Op2 = And | Or | Xor | Plus
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- | Size of programs.
 
