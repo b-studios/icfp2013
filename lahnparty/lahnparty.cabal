@@ -42,3 +42,13 @@ test-suite lahnparty-tests
                        test-framework,
                        test-framework-hunit,
                        HUnit
+
+executable lahnparty-web-tests
+  Hs-source-dirs:      src-test
+  Main-is:             web-tests.hs
+  Build-depends:       lahnparty,
+                       base >=4.5,
+                       HTTP,
+                       test-framework,
+                       test-framework-hunit,
+                       HUnit
