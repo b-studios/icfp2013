@@ -1,0 +1,107 @@
+## Json Spec #
+~~~
+interface Problem {
+  id: string;             // problem ID
+  size: number;           // problem size |P| [3, 30]
+  operators: string[];    // set of operators like ["fold", "plus"]
+  solved?: boolean;
+  timeLeft?: number       // we have 300s
+}
+
+interface EvalRequest {
+  id?: string;            
+  program?: string;
+  arguments: string[];
+}
+
+interface EvalResponse {
+  status: string; 
+  outputs?: string[];  
+  message?: string;    
+}
+
+interface Guess {
+  id: string;
+  program: string;
+}
+
+interface GuessResponse {
+  status: string;
+  values?: string[];
+  message?: string;
+  lightning?: bool;
+}
+
+interface TrainRequest {
+  size?: number;
+  operators?: string[];
+}
+
+interface TrainingProblem {
+  challenge: string;
+  id: string;
+  size: number;
+  operators: string[];
+}
+
+interface Status {
+  easyChairId: number;
+  contestScore: number;
+  lightningScore: number;
+  trainingScore: number;
+  mismatches: number;
+  numRequests: number;
+  requestWindow: {
+    resetsIn: number;
+    amount: number;
+    limit: number
+  };
+  cpuWindow: {
+    resetsIn: number;
+    amount: number;
+    limit: number
+  };
+  cpuTotalTime:number;
+}
+~~~
+
+
+## Rest API #
+
+### List Problems #
+~~~
+POST /myproblems
+  200 body Problem []
+  403 authorization required
+  429 try again later
+~~~
+
+#### Example Response
+~~~
+[
+ {"id":"dKdeIAoZMyb5y3a74iTcLXyr",
+  "size":30,
+  "operators":["shr16","if0","xor","plus","not","fold"]},
+ {"id":"hx2XLtS756IvDv9ZNuILizxJ",
+  "size":3,
+  "operators":["not"],
+  "solved":true,
+  "timeLeft":0},
+ {"id":"af82718a7fhla74cal8faf7a",
+  "size":3,
+  "operators":["not"],
+  "timeLeft":192.61}
+]
+~~~
+
+### Evaluate Programs
+~~~
+POST /eval request body EvalRequest
+  200 body EvalResponse
+  400 Bad Request   (some input is not well-formed)
+  401 Unauthorized  problem was not requested by the current user
+  404 Not Found     no such challenge
+  410 Gone          problem requested more than 5 minutes ago
+  412               problem was already solved (by current user)
+  413               request too big
+~~~
