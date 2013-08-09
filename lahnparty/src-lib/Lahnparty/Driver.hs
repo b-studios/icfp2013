@@ -41,7 +41,5 @@ filterProgs programs inputs outputs =
     evalP input program == output ]
 
 
-randomInputs programs = [0 .. 255] -- undefined
----main :: IO ()
---main = d
-  
+randomInputs programs = [0 .. 255]
+
