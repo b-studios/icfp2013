@@ -15,22 +15,22 @@ import Lahnparty.Language
 -- * Helper Functions
 --
 
--- lookup a required field in a JSON object
+-- | Lookup a required field in a JSON object
 lookupReq :: JSON a => [(String, JSValue)] -> String -> Result a
 lookupReq m k | Just v <- lookup k m = readJSON v
               | otherwise            = Error ("Missing required field: " ++ k)
 
--- lookup an optional field in a JSON object
+-- | Lookup an optional field in a JSON object
 lookupOpt :: JSON a => [(String, JSValue)] -> String -> Result (Maybe a)
 lookupOpt m k | Just v <- lookup k m = fmap Just (readJSON v)
               | otherwise            = Ok Nothing
 
--- generate an optional field for a JSON object
+-- | Generate an optional field for a JSON object
 optField :: JSON a => String -> Maybe a -> [(String,JSValue)]
 optField k (Just a) = [(k, showJSON a)]
 optField _ _        = []
 
--- convert unsigned 64 bit int to hex string
+-- | Convert unsigned 64 bit int to hex string
 toHex :: Word64 -> String
 toHex w = "0x" ++ showHex w ""
 
@@ -71,10 +71,10 @@ instance JSON Problem where
 
 -- ** EvalRequest
 
--- There are two kinds of eval requests:
---   1. request the results of solution for up to 256 arguments
---   2. compute the results of a program for up to 256 arguments
--- We implement only the first since we can compute the second on our own.
+-- | There are two kinds of eval requests:
+--     1. request the results of solution for up to 256 arguments
+--     2. compute the results of a program for up to 256 arguments
+--   We implement only the first since we can compute the second on our own.
 data EvalRequest = EvalRequest {
   evalRequest_id        :: String,  -- program ID like "dKdeIAoZMyb5y3a74iTcLXyr"
   evalRequest_arguments :: [Word64] -- up to 256, 64bit unsigned numbers (output in hex)
@@ -197,6 +197,8 @@ instance JSON GuessResponse where
 urlRoot = "http://icfpc2013.cloudapp.net/"
 secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
 
+-- | Send an HTTP request.
+--   Clients should use `evalRequest` or `guessRequest`.
 performRequest :: (JSON a, JSON b) => String -> a -> IO (Result b)
 performRequest path request = do
     result <- simpleHTTP $ postRequestWithBody url "application/json" (encode request)
@@ -208,9 +210,11 @@ performRequest path request = do
           else return (Error ("HTTP Error: " ++ msg))
   where url = urlRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
 
+-- | Send an eval request.
 evalRequest :: EvalRequest -> IO (Result EvalResponse)
 evalRequest = performRequest "eval"
 
+-- | Send a guess request.
 guessRequest :: Guess -> IO (Result GuessResponse)
 guessRequest = performRequest "guess"
 
