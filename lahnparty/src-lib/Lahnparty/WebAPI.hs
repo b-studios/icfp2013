@@ -47,7 +47,7 @@ data EvalResponse =
 
 -- | Send a guess request.
 guessRequest :: ProblemID -> P -> IO (Response GuessResponse)
-guessRequest id p = performRequest "guess" (Guess id (prettyP p))
+guessRequest id = guessRequestString id . prettyP
 
 -- | Send a guess request with a program represented as a string.
 guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)
