@@ -1,0 +1,8 @@
+training example from Eric's screenshot
+(this is already solved)
+
+challenge id:
+MFrVnSUaIMxUZ38ZDqBzwkwz
+
+program:
+(lambda (x_7610) (xor (shr4 (shr16 (not x_7610))) (shr4 0)))
