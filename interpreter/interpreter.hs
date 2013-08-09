@@ -1,20 +1,18 @@
 module Main where
 
--- only three variables per program anyway?!
---
--- data Id = Input | FoldBase | FoldStep
+import Data.Word (Word64)
 
-type Id = String
+data Id = Input | FoldBase | FoldStep
 
 data P
-  = PLambda Id E
+  = Lambda E
 
 data E
   = Zero
   | One
-  | Id
+  | Id Id
   | If0 E E E
-  | Fold E E Id Id E
+  | Fold E E E
   | Op1 Op1 E
   | Op2 Op2 E E
 
