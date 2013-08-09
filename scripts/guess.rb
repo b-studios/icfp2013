@@ -1,12 +1,12 @@
 #
-#
+# script to generate guess request
 
 id = %Q{
-MFrVnSUaIMxUZ38ZDqBzwkwz
+cVBdX88Lz74jTfLTSj2YseZW
 }.strip
 
 program = %Q{
-(lambda (x) (shr4 (shr16 (not x))))
+(lambda (x) x)
 }.strip
 
 guessReq = %Q[
