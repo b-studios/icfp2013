@@ -51,3 +51,18 @@ instance Arbitrary E where
               , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
               , Fold <$> arbitrary <*> arbitrary <*> arbitrary
               ]
+
+
+instance Arbitrary (State Params E) where
+  arbitrary = promote $ oneof <$>
+              ((++) <$>
+              return [ constantE
+                     , arbitraryVariable
+                     , If0 <$> arbitrary <*> arbitrary <*> arbitrary
+                     , Op1 <$> arbitrary <*> arbitrary
+                     , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
+                     ]
+              <*> (
+                   (\arbOp -> [ Fold <$> arbitrary <*> arbitrary <*> arbOp ]) <$>
+                     (modify (\p -> p {inFold = True}) >> return arbitrary)))
+
