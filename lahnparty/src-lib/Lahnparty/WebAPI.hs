@@ -10,13 +10,12 @@ import Network.HTTP (ResponseCode,postRequestWithBody,simpleHTTP)
 import qualified Network.HTTP as HTTP
 
 import Lahnparty.Language
+import Lahnparty.Types
 
 
 --
 -- * Public Interface
 --
-
-type ProblemID = String
 
 -- | Generic response to a request. Separates the various kinds of errors.
 data Response a =

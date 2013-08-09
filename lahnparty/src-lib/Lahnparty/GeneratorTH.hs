@@ -1,12 +1,12 @@
 module Lahnparty.GeneratorTH where
 
 import Lahnparty.Language
+import Lahnparty.Types
 import Data.List(delete)
 import Data.Word (Word64)
 
 type Argument = Word64
 type Result = Word64
-type Size = Int
 type InFold = Bool
 type MustFold = Bool
 

@@ -1,5 +1,5 @@
 module Main where
 
-import Lahnparty.Language
+import qualified Lahnparty.Driver as D
 
-main = putStrLn "hello world"
+main = D.main
