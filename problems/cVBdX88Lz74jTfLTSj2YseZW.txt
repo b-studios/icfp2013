@@ -1,0 +1,18 @@
+{
+    "id": "cVBdX88Lz74jTfLTSj2YseZW",
+    "size": 28,
+    "operators": [
+        "and",
+        "if0",
+        "not",
+        "or",
+        "plus",
+        "shl1",
+        "shr1",
+        "shr16",
+        "shr4",
+        "tfold",
+        "xor"
+    ],
+    "challenge": "(lambda (x_74849) (fold x_74849 0 (lambda (x_74849 x_74850) (plus (shr4 (shl1 x_74849)) (shr16 (or x_74849 (and (not (not (shr1 (if0 (and (xor (shr16 (shr4 x_74849)) (shr1 x_74849)) x_74849) x_74849 x_74850)))) x_74850)))))))"
+}
