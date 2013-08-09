@@ -63,7 +63,7 @@ sizedIf0 size = do
   -- Each branch needs size at least 1.
   condSize <- choose (1, size - 3)
   thenSize <- choose (1, size - 2 - condSize)
-  let elseSize = size - condSize - elseSize
+  let elseSize = size - condSize - elseSize - 1
   If0 <$> resize condSize arbitrary <*> resize thenSize arbitrary <*> resize elseSize arbitrary
 
 arbitraryFirstOrderProgGens =
