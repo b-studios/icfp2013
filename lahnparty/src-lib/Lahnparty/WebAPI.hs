@@ -5,6 +5,7 @@ module Lahnparty.WebAPI where
 import Numeric
 
 import Data.Word
+import Network.HTTP hiding (Result)
 import Text.JSON
 
 import Lahnparty.Language
@@ -189,7 +190,43 @@ instance JSON GuessResponse where
     ]
 
 
+--
+-- * HTTP interface 
+--
+
+urlRoot = "http://icfpc2013.cloudapp.net/"
+secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
+
+performRequest :: (JSON a, JSON b) => String -> a -> IO (Result b)
+performRequest path request = do
+    result <- simpleHTTP $ postRequestWithBody url "application/json" (encode request)
+    case result of
+      Left err -> return (Error (show err))
+      Right (Response code msg _ body) ->
+        if code == (2,0,0)
+          then return (decode body)
+          else return (Error ("HTTP Error: " ++ msg))
+  where url = urlRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
+
+evalRequest :: EvalRequest -> IO (Result EvalResponse)
+evalRequest = performRequest "eval"
+
+guessRequest :: Guess -> IO (Result GuessResponse)
+guessRequest = performRequest "guess"
+
+
+--
+-- * Testing
+--
+
+demoEvalRequest1 = EvalRequest "cVBdX88Lz74jTfLTSj2YseZW" [1..256]
+demoEvalRequest2 = EvalRequest "MFrVnSUaIMxUZ38ZDqBzwkwz" [1..256]
+
+demoGuess1 = Guess "cVBdX88Lz74jTfLTSj2YseZW" "(lambda (x_1) x_1)"
+
 {-
+
+** Unimplemented part of JSON Spec **
 
 data TrainRequest = TrainRequest {
   trainRequiest_size      :: Int,
