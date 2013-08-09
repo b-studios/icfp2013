@@ -12,12 +12,14 @@ author:              Lahnparty
 -- copyright:           
 category:            Game
 build-type:          Simple
-cabal-version:       >=1.8
+cabal-version:       >= 1.8
 
 library
   hs-source-dirs:      src-lib
-  exposed-modules:     Lahnparty.Language, Lahnparty.Generator1
-  build-depends:       base >= 4.5, QuickCheck, random
+  exposed-modules:     Lahnparty.Language,
+                       Lahnparty.Generator1,
+                       Lahnparty.WebAPI
+  build-depends:       base >= 4.5, json, QuickCheck, random
 
 executable lahnparty-interpreter
   hs-source-dirs:      src-exec
