@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, NoMonomorphismRestriction #-}
 module Lahnparty.Generator1 where
 
 import Lahnparty.Language
@@ -40,29 +40,46 @@ instance Arbitrary Op2 where
   arbitrary = elements [And, Or, Xor, Plus]
 
 constantE = elements [Zero, One]
+
 arbitraryVariable = Id <$> arbitrary
 
-instance Arbitrary E where
-  arbitrary = oneof
-              [ constantE
-              , arbitraryVariable
-              , If0 <$> arbitrary <*> arbitrary <*> arbitrary
-              , Op1 <$> arbitrary <*> arbitrary
-              , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
-              , Fold <$> arbitrary <*> arbitrary <*> arbitrary
-              ]
+arbitraryFoldParam arbOp = Fold <$> arbitrary <*> arbitrary <*> arbOp
+arbitraryFold =
+  (\arbOp -> [ arbitraryFoldParam arbOp ]) <$>
+                   do
+                     modify (\p -> p {inFold = True})
+                     return arbitrary
 
+sizedArbOp1 size =
+  Op1 <$> arbitrary <*> resize (size - 1) arbitrary
+
+sizedArbOp2 size = do
+  -- Each branch needs size at least 1.
+  op1Size <- choose (1, size - 2)
+  let op2Size = size - 1 - op1Size
+  Op2 <$> arbitrary <*> resize op1Size arbitrary <*> resize op2Size arbitrary
+
+sizedIf0 size = do
+  -- Each branch needs size at least 1.
+  condSize <- choose (1, size - 3)
+  thenSize <- choose (1, size - 2 - condSize)
+  let elseSize = size - condSize - elseSize
+  If0 <$> resize condSize arbitrary <*> resize thenSize arbitrary <*> resize elseSize arbitrary
+
+arbitraryFirstOrderProgGens =
+  [ constantE
+  , arbitraryVariable
+  , sized sizedIf0
+  , sized sizedArbOp1
+  , sized sizedArbOp2
+  ]
+
+instance Arbitrary E where
+  arbitrary =
+    oneof
+    (arbitraryFirstOrderProgGens ++ [ Fold <$> arbitrary <*> arbitrary <*> arbitrary ])
 
 instance Arbitrary (State Params E) where
-  arbitrary = promote $ oneof <$>
-              ((++) <$>
-              return [ constantE
-                     , arbitraryVariable
-                     , If0 <$> arbitrary <*> arbitrary <*> arbitrary
-                     , Op1 <$> arbitrary <*> arbitrary
-                     , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
-                     ]
-              <*> (
-                   (\arbOp -> [ Fold <$> arbitrary <*> arbitrary <*> arbOp ]) <$>
-                     (modify (\p -> p {inFold = True}) >> return arbitrary)))
+  arbitrary =
+    promote $ oneof <$> ((arbitraryFirstOrderProgGens ++) <$> arbitraryFold)
 
