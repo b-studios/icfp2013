@@ -40,6 +40,10 @@ data EvalResponse =
 guessRequest :: ProblemID -> P -> IO (Result GuessResponse)
 guessRequest id p = performRequest "guess" (Guess id (prettyP p))
 
+-- | Send a guess request with a program represented as a string.
+guessRequestString :: ProblemID -> String -> IO (Result GuessResponse)
+guessRequestString id s = performRequest "guess" (Guess id s)
+
 data GuessResponse =
     GuessResponseWin
   | GuessResponseMismatch [Word64]
