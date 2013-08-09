@@ -62,7 +62,7 @@ getMoreInfo probId [] = do
   putStrLn "No more possible programs"
   return ()
 
-getMoreInfo probId (p: programs) = do
+getMoreInfo probId (p : programs) = do
   putStrLn $ "Guessing program " ++ prettyP p
   res <- guessRequest probId p
   case res of
@@ -80,7 +80,7 @@ getMoreInfo probId (p: programs) = do
     HTTPError (4,2,9) _ -> do
       putStrLn "Too many requests, trying again."
       threadDelay 5000000 -- 5 seconds
-      getMoreInfo probId programs
+      getMoreInfo probId (p : programs)
     err ->
       unexpected err probId
 
