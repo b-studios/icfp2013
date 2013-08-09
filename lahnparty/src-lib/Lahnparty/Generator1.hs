@@ -50,12 +50,28 @@ arbitraryFold =
                      modify (\p -> p {inFold = True})
                      return arbitrary
 
+sizedArbOp1 size =
+  Op1 <$> arbitrary <*> resize (size - 1) arbitrary
+
+sizedArbOp2 size = do
+  -- Each branch needs size at least 1.
+  op1Size <- choose (1, size - 2)
+  let op2Size = size - 1 - op1Size
+  Op2 <$> arbitrary <*> resize op1Size arbitrary <*> resize op2Size arbitrary
+
+sizedIf0 size = do
+  -- Each branch needs size at least 1.
+  condSize <- choose (1, size - 3)
+  thenSize <- choose (1, size - 2 - condSize)
+  let elseSize = size - condSize - elseSize
+  If0 <$> resize condSize arbitrary <*> resize thenSize arbitrary <*> resize elseSize arbitrary
+
 arbitraryFirstOrderProgGens =
   [ constantE
   , arbitraryVariable
-  , If0 <$> arbitrary <*> arbitrary <*> arbitrary
-  , Op1 <$> arbitrary <*> arbitrary
-  , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
+  , sized sizedIf0
+  , sized sizedArbOp1
+  , sized sizedArbOp2
   ]
 
 instance Arbitrary E where
