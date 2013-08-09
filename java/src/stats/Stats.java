@@ -50,9 +50,19 @@ public class Stats {
 		
 		System.out.format("Problem count: %d\n", myproblems.size());
 		
-		System.out.format("BySize: %s", bySize(myproblems));
+		//System.out.format("BySize: %s", bySize(myproblems));
+		printBySizeTreeMap(bySize(myproblems));
 		
-		
+		//System.out.format("ByOperator: %s", byOperator(myproblems));
+	}
+	
+	public static void printBySizeTreeMap(TreeMap<Integer, List<ProblemMetadata>> tm) {
+		for (Integer size : tm.keySet()) {
+			System.out.println("Size " + size);
+			for (ProblemMetadata pm : tm.get(size)) {
+				System.out.println(pm);
+			}
+		}
 	}
 
 	public static TreeMap<Integer, List<ProblemMetadata>> bySize(List<ProblemMetadata> l) {
@@ -64,6 +74,21 @@ public class Stats {
 			}
 			vals.add(pm);
 			tm.put(pm.size, vals);
+		}
+		return tm;
+	}
+	
+	public static TreeMap<String, List<ProblemMetadata>> byOperator(List<ProblemMetadata> l) {
+		TreeMap<String, List<ProblemMetadata>> tm = new TreeMap<>();
+		for (ProblemMetadata pm : l) {
+			for (String operator : pm.operators) {
+				List vals = tm.get(operator);
+				if (vals == null) {
+					vals = new ArrayList<>();
+				}
+				vals.add(pm);
+				tm.put(operator, vals);
+			}
 		}
 		return tm;
 	}
