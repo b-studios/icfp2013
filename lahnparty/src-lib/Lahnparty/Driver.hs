@@ -20,8 +20,10 @@ driver gen probId size ops =
 
     return ()
 
-getMoreInfo probId [] =
+getMoreInfo probId [] = do
+  putStrLn "No more possible programs"
   return ()
+
 getMoreInfo probId (p: programs) = do
   putStrLn $ "Guessing program " ++ prettyP p
   res <- guessRequest probId p
