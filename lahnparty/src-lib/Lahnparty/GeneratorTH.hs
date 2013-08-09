@@ -68,10 +68,12 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                                  e1 <- findE (n-1-i) ops' infold False]
                           ++ [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops' infold False,
+                                                 e0 /= Zero,                                   -- prune: 0 binop e always ha ssmaller equivalent
                                                  e1 <- findE (n-1-i) ops  infold True]
 
                         else [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops infold False,
+                                                 e0 /= Zero,                                   -- prune: 0 binop e always ha ssmaller equivalent
                                                  e1 <- findE (n-1-i) ops infold False]
     gen OpIf0       = if mustfold
                         then [ If0 e0 e1 e2 |  i <- [5..n-3], j <-[1..n-2-i], let k = n-1-i-j,
@@ -80,6 +82,8 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                               e2 <- findE k ops' infold False]
                           ++ [ If0 e0 e1 e2 |  i <- [1..n-7], j <-[5..n-2-i], let k = n-1-i-j,
                                               e0 <- findE i ops' infold False,
+                                              e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                              e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
                                               e1 <- findE j ops  infold True,
                                               e2 <- findE k ops' infold False]
                           ++ [ If0 e0 e1 e2 |  i <- [1..n-7], j <-[1..n-6-i], let k = n-1-i-j,

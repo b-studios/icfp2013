@@ -1,0 +1,22 @@
+possible simplification rules:
+
+0 and e -> 0 ...implemented
+0 or e -> e ...implemented
+0 xor e -> e ...implemented
+0 plus e -> e ...implemented
+
+not (not e) -> e
+
+fold e0 e1 0 -> 0
+fold e0 e1 1 -> 1
+fold e0 e1 input -> input
+
+if0 0 e1 e2 -> e1 ..implemented
+if0 1 e1 e2 -> e2 ..implemented
+
+
+---
+
+more complicated:
+x xor x -> 0
+jeder fold mit einer konstanten funktion (generiere nur, was auch auf 
