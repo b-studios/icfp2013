@@ -3,7 +3,15 @@ module Lahnparty.Language where
 import Data.Bits
 import Data.Word (Word64)
 
-data Id = Input | Byte | Acc
+data Id =
+  -- | The overall input (bound by the top-level lambda).
+  Input
+
+  -- | The current byte (first variable bound by lambda in fold).
+  | Byte
+
+  -- | The current accumulator (second variable bound by lambda in fold).
+  | Acc
 
 data P
   = Lambda E
