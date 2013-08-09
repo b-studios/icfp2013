@@ -70,7 +70,7 @@ class IcfpCli < Thor
   def uri
     URI('http://icfpc2013.cloudapp.net')
   end
-0x00000000000001
+
   def buildPath(path)
     "/#{path}?auth=#{secret}vpsH1H"
   end
