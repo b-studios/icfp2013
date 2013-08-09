@@ -41,12 +41,13 @@ driver gen probId size ops =
 
       OK (EvalResponseOK outputs) -> do
         let programsFilt = filterProgs programs inputs outputs
-        when expensiveDebug $
+        when expensiveDebug $ do
            putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
-        putStrLn $ "First 10 generated programs after filtering:"
-        mapM_ print $ take 10 programsFilt
+           putStrLn $ "First 10 generated programs after filtering:"
+           mapM_ print $ take 10 programsFilt
+
         getMoreInfo probId programsFilt
-      
+
       HTTPError (4,2,9) _ -> do
         putStrLn "Too many requests, trying again."
         threadDelay 5000000 -- 5 seconds
