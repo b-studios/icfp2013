@@ -23,12 +23,13 @@ driver gen probId size ops =
 getMoreInfo probId [] =
   return ()
 getMoreInfo probId (p: programs) = do
+  putStrLn $ "Guessing program " ++ prettyP p
   res <- guessRequest probId p
   case res of
     Ok GuessResponseWin ->
       return ()
     Ok (GuessResponseError str) -> do
-      putStrLn "What?"
+      putStrLn "What? GuessResponseError " ++ str
       getMoreInfo probId programs
     Ok (GuessResponseMismatch words) ->
       getMoreInfo probId $ filterProgs programs [words !! 0] [words !! 1]
@@ -37,13 +38,16 @@ filterProgs programs inputs outputs =
   [ program | program <- programs,
     (input, output) <- zip inputs outputs,
     evalP input program == output ]
-
+    -- XXX speed this evaluation by SIMD evaluation (?)
 
 randomInputs programs = [0 .. 255]
 
 {-
 main = do
     -- let (size, ops) = fetchData probId
+
+    let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
+    let (size, ops) = (5, [])
     driver findP probId size ops
 
 -}
