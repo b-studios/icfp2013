@@ -6,12 +6,15 @@ import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
 
+-- XXX disable in production, it changes memory usage
+expensiveDebug = True
+
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
   do
     let programs = gen size ops
-    -- XXX remove in production
-    putStrLn $ "# generated programs: " ++ show (length programs)
+    if (expensiveDebug)
+       putStrLn $ "# generated programs: " ++ show (length programs)
     putStrLn $ "First 10 generated programs:"
 
     mapM_ print $ take 10 programs
@@ -21,8 +24,9 @@ driver gen probId size ops =
     case result of
       OK (EvalResponseOK outputs) -> do
         let programsFilt = filterProgs programs inputs outputs
-        -- XXX remove in production
-        putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
+        if (expensiveDebug)
+           putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
+
         putStrLn $ "First 10 generated programs after filtering:"
 
         mapM_ print $ take 10 programsFilt
