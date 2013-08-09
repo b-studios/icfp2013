@@ -10,6 +10,15 @@ import Control.Monad
 -- XXX disable in production, it changes memory usage
 expensiveDebug = False
 
+unexpected err probId = do
+  case err of
+    HTTPError (4,1,0) str ->
+      do
+        putStrLn $ ">>> We failed for timeout on problem ID" ++ show probId
+
+  print err
+  error "Exiting defensively for a failure"
+
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
@@ -36,7 +45,7 @@ driver gen probId size ops =
 
         getMoreInfo probId programsFilt
       err -> do
-        print err
+        unexpected err probId
 
     return ()
 
@@ -58,6 +67,8 @@ getMoreInfo probId (p: programs) = do
       let programsFilt = filterProgs programs [words !! 0] [words !! 1]
       putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length programsFilt)
       getMoreInfo probId programsFilt
+    err ->
+      unexpected err probId
 
 filterProgs programs inputs outputs =
   [ program
