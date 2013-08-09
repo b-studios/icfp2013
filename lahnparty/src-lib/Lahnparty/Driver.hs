@@ -45,11 +45,14 @@ randomInputs programs = [0 .. 255]
 
 
 main = do
-    -- let (size, ops) = fetchData probId
+  let size = 5
 
-  
+  -- trainRequestSizeOps size [] []
+-- > Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
+
+  -- let (size, ops) = fetchData probId
+
   let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
-  let (size, ops) = (5, [OpOp1 Not, OpOp2 Plus])
+  let ops = [OpOp1 Not, OpOp2 Plus]
   driver findP probId size ops
 
--- Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
