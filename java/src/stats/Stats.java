@@ -13,6 +13,20 @@ import org.json.simple.parser.JSONParser;
 
 
 public class Stats {
+	
+	public static class ExcludesOpFilter implements FilterOp {
+		@Override
+		public boolean apply(String op, ProblemMetadata p) {
+			return !p.operators.contains(op);
+		}
+	}
+	
+	public static class IncludesOpFilter implements FilterOp {
+		@Override
+		public boolean apply(String op, ProblemMetadata p) {
+			return p.operators.contains(op);
+		}
+	}
 
 	public static class ProblemMetadata {
 		public String id;
@@ -59,9 +73,11 @@ public class Stats {
 		System.out.println(printHistogram(bySize(myproblems)));
 		
 		System.out.println("\nall problems without fold");
-		System.out.println(printHistogram(filterExcludesOp(bySize(myproblems), "fold")));
+		System.out.println(printHistogram(filter(bySize(myproblems), new ExcludesOpFilter(), "fold")));
 
-		printBySizeTreeMap(bySize(myproblems));
+		//printBySizeTreeMap(bySize(myproblems));
+		
+		printBySizeTreeMap(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"));
 		
 	}
 	
@@ -133,14 +149,14 @@ public class Stats {
 		return sb.toString();
 	}
 	
-	private static TreeMap<Integer, List<ProblemMetadata>> filterExcludesOp(TreeMap<Integer, List<ProblemMetadata>> tm, String op) {
+	private static TreeMap<Integer, List<ProblemMetadata>> filter(TreeMap<Integer, List<ProblemMetadata>> tm, FilterOp filter, String op) {
 		TreeMap<Integer, List<ProblemMetadata>> tm2 = new TreeMap<>();
 		
 		for (Entry<Integer, List<ProblemMetadata>> e : tm.entrySet()) {
 			List<ProblemMetadata> problems = e.getValue();
 			List<ProblemMetadata> newProblems = new LinkedList<>();
 			for (ProblemMetadata p : problems) {
-				if (!p.operators.contains(op)) {
+				if (filter.apply(op, p)) {
 					newProblems.add(p);
 				}
 			}
