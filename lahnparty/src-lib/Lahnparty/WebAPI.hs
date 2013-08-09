@@ -12,7 +12,7 @@ import Lahnparty.Language
 
 
 --
--- * Client Interface
+-- * Public Interface
 --
 
 type ProblemID = String
@@ -20,38 +20,31 @@ type ProblemID = String
 
 -- ** Submitting Evaluation Requests
 
--- | There are two kinds of eval requests:
+-- | Send an evaluation request.
+--   Note that there are two kinds of eval requests:
 --     1. request the results of solution for up to 256 arguments
 --     2. compute the results of a program for up to 256 arguments
 --   We implement only the first since we can compute the second on our own.
-data EvalRequest = EvalRequest ProblemID [Word64]
-  deriving (Eq,Show)
+evalRequest :: ProblemID -> [Word64] -> IO (Result EvalResponse)
+evalRequest id vs = performRequest "eval" (EvalRequest id vs)
 
 data EvalResponse = 
     EvalResponseOK [Word64]
   | EvalResponseError String
   deriving (Eq,Show)
 
--- | Send an evaluation request.
-evalRequest :: EvalRequest -> IO (Result EvalResponse)
-evalRequest = performRequest "eval"
-
 
 -- ** Submitting Guesses
 
-data Guess = Guess ProblemID String
-  deriving (Eq,Show)
+-- | Send a guess request.
+guessRequest :: ProblemID -> P -> IO (Result GuessResponse)
+guessRequest id p = performRequest "guess" (Guess id (prettyP p))
 
 data GuessResponse =
     GuessResponseWin
   | GuessResponseMismatch [Word64]
   | GuessResponseError String
   deriving (Eq,Show)
-
--- | Send a guess request.
-guessRequest :: Guess -> IO (Result GuessResponse)
-guessRequest = performRequest "guess"
-
 
 
 --
@@ -80,7 +73,10 @@ toHex :: Word64 -> String
 toHex w = "0x" ++ showHex w ""
 
 
--- ** JSON Conversions
+-- ** JSON Support Code
+
+data EvalRequest = EvalRequest ProblemID [Word64]
+  deriving (Eq,Show)
 
 instance JSON EvalRequest where
   
@@ -120,6 +116,10 @@ instance JSON EvalResponse where
       ("status", showJSON "error"),
       ("outputs", showJSON msg)
     ]
+
+
+data Guess = Guess ProblemID String
+  deriving (Eq,Show)
 
 instance JSON Guess where
   
