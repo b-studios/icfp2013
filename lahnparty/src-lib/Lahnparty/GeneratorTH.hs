@@ -48,7 +48,7 @@ findP size ops =
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concat $ map (\s -> findE s ops False (OpFold `elem` ops)) [5..size - 1]
+     map Lambda $ concat $ map (\s -> findETopFold s (delete OpTFold ops)) [5..size - 1]
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
      map Lambda $ concat $ map (\s -> findE s ops False (OpFold `elem` ops)) [1..size - 1]
