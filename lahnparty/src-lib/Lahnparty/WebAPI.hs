@@ -12,8 +12,55 @@ import Lahnparty.Language
 
 
 --
--- * Helper Functions
+-- * Client Interface
 --
+
+
+-- ** Submitting Evaluation Requests
+
+-- | There are two kinds of eval requests:
+--     1. request the results of solution for up to 256 arguments
+--     2. compute the results of a program for up to 256 arguments
+--   We implement only the first since we can compute the second on our own.
+data EvalRequest = EvalRequest {
+  evalRequest_id        :: String,  -- ^ Problem ID.
+  evalRequest_arguments :: [Word64] -- ^ Argument values.
+} deriving (Eq,Show)
+
+data EvalResponse = 
+    EvalResponseOK    { evalResponse_outputs :: [Word64] }
+  | EvalResponseError { evalResponse_message :: String }
+  deriving (Eq,Show)
+
+-- | Send an evaluation request.
+evalRequest :: EvalRequest -> IO (Result EvalResponse)
+evalRequest = performRequest "eval"
+
+
+-- ** Submitting Guesses
+
+data Guess = Guess {
+  guess_id      :: String,
+  guess_program :: String
+}
+
+data GuessResponse =
+    GuessResponseWin
+  | GuessResponseMismatch { guessResponse_values :: [Word64] }
+  | GuessResponseError    { guessResponse_message :: String }
+  deriving (Eq,Show)
+
+-- | Send a guess request.
+guessRequest :: Guess -> IO (Result GuessResponse)
+guessRequest = performRequest "guess"
+
+
+
+--
+-- * Internal Code
+--
+
+-- ** Helper Functions
 
 -- | Lookup a required field in a JSON object
 lookupReq :: JSON a => [(String, JSValue)] -> String -> Result a
@@ -35,50 +82,7 @@ toHex :: Word64 -> String
 toHex w = "0x" ++ showHex w ""
 
 
---
--- * JSON Spec
---
-
--- ** Problem
-
-data Problem = Problem {
-  problem_id        :: String,     -- problem ID
-  problem_size      :: Int,        -- problem size |P| [3, 30]
-  problem_operators :: [String],   -- set of operators like ["fold", "plus"] (TODO: change to [Op] once we have Tillmann's code?)
-  problem_solved    :: Maybe Bool, -- is the problem solved?
-  problem_timeLeft  :: Maybe Float -- time we have left
-} deriving (Eq,Show)
-
-instance JSON Problem where
-  
-  readJSON (JSObject o) = do
-      id   <- lookupReq m "id"
-      size <- lookupReq m "size"
-      ops  <- lookupReq m "operators"
-      sol  <- lookupOpt m "solved"
-      time <- lookupOpt m "timeLeft"
-      return (Problem id size ops sol time)
-    where m = fromJSObject o
-  readJSON _ = Error "Error reading Problem (not JSObject)."
-  
-  showJSON (Problem id size ops sol time) =
-      JSObject $ toJSObject $ [
-        ("id", showJSON id),
-        ("size", showJSON size),
-        ("operators", showJSON ops)
-      ] ++ optField "solved" sol ++ optField "timeLeft" time
-
-
--- ** EvalRequest
-
--- | There are two kinds of eval requests:
---     1. request the results of solution for up to 256 arguments
---     2. compute the results of a program for up to 256 arguments
---   We implement only the first since we can compute the second on our own.
-data EvalRequest = EvalRequest {
-  evalRequest_id        :: String,  -- program ID like "dKdeIAoZMyb5y3a74iTcLXyr"
-  evalRequest_arguments :: [Word64] -- up to 256, 64bit unsigned numbers (output in hex)
-} deriving (Eq,Show)
+-- ** JSON Conversions
 
 instance JSON EvalRequest where
   
@@ -95,14 +99,6 @@ instance JSON EvalRequest where
         ("arguments", showJSON (map toHex args))
       ]
     
-
--- ** EvalResponse
-
-data EvalResponse = 
-    EvalResponseOK    { evalResponse_outputs :: [Word64] }
-  | EvalResponseError { evalResponse_message :: String }
-  deriving (Eq,Show)
-
 instance JSON EvalResponse where
   
   readJSON (JSObject o) = do
@@ -127,14 +123,6 @@ instance JSON EvalResponse where
       ("outputs", showJSON msg)
     ]
 
-
--- ** Guess
-
-data Guess = Guess {
-  guess_id      :: String,
-  guess_program :: String
-}
-
 instance JSON Guess where
   
   readJSON (JSObject o) = do
@@ -149,15 +137,6 @@ instance JSON Guess where
         ("id", showJSON id),
         ("program", showJSON prog)
       ]
-
-
--- ** GuessResponse
-
-data GuessResponse =
-    GuessResponseWin
-  | GuessResponseMismatch { guessResponse_values :: [Word64] }
-  | GuessResponseError    { guessResponse_message :: String }
-  deriving (Eq,Show)
 
 instance JSON GuessResponse where
   
@@ -190,9 +169,7 @@ instance JSON GuessResponse where
     ]
 
 
---
--- * HTTP interface 
---
+-- ** HTTP Support Code
 
 urlRoot = "http://icfpc2013.cloudapp.net/"
 secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
@@ -210,27 +187,48 @@ performRequest path request = do
           else return (Error ("HTTP Error: " ++ msg))
   where url = urlRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
 
--- | Send an eval request.
-evalRequest :: EvalRequest -> IO (Result EvalResponse)
-evalRequest = performRequest "eval"
 
--- | Send a guess request.
-guessRequest :: Guess -> IO (Result GuessResponse)
-guessRequest = performRequest "guess"
-
-
---
--- * Testing
---
+-- ** Test Code
 
 demoEvalRequest1 = EvalRequest "cVBdX88Lz74jTfLTSj2YseZW" [1..256]
 demoEvalRequest2 = EvalRequest "MFrVnSUaIMxUZ38ZDqBzwkwz" [1..256]
 
 demoGuess1 = Guess "cVBdX88Lz74jTfLTSj2YseZW" "(lambda (x_1) x_1)"
 
+
 {-
 
-** Unimplemented part of JSON Spec **
+-- ** Unused part of JSON spec **
+
+data Problem = Problem {
+  problem_id        :: String,     -- problem ID
+  problem_size      :: Int,        -- problem size |P| [3, 30]
+  problem_operators :: [String],   -- set of operators like ["fold", "plus"] (TODO: change to [Op] once we have Tillmann's code?)
+  problem_solved    :: Maybe Bool, -- is the problem solved?
+  problem_timeLeft  :: Maybe Float -- time we have left
+} deriving (Eq,Show)
+
+instance JSON Problem where
+  
+  readJSON (JSObject o) = do
+      id   <- lookupReq m "id"
+      size <- lookupReq m "size"
+      ops  <- lookupReq m "operators"
+      sol  <- lookupOpt m "solved"
+      time <- lookupOpt m "timeLeft"
+      return (Problem id size ops sol time)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading Problem (not JSObject)."
+  
+  showJSON (Problem id size ops sol time) =
+      JSObject $ toJSObject $ [
+        ("id", showJSON id),
+        ("size", showJSON size),
+        ("operators", showJSON ops)
+      ] ++ optField "solved" sol ++ optField "timeLeft" time
+
+
+-- ** Unimplemented part of JSON spec **
 
 data TrainRequest = TrainRequest {
   trainRequiest_size      :: Int,
