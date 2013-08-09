@@ -44,6 +44,7 @@ generate size ops points = undefined
 
 -- | Generates expressions of given size using (a subset) of given operators. 
 --   May omit expressions that have shorter equivalents (but currently does not).
+--   If a fold shows up it will be used (work in progress)
 findE :: Size -> [Op] -> InFold -> [E]
 findE 1 _  False = [Id Input, One, Zero]
 findE 1 _  True  = [Id Input, One, Zero, Id Byte, Id Acc]
@@ -53,7 +54,7 @@ findE n ops infold = concat $ map gen ops
   where
     gen :: Op -> [E]
     gen (OpOp1 op1) = map (Op1 op1) $ findE (n-1) ops infold
-    gen (OpOp2 op2) = [ (Op2 op2) e0 e1 |  i <- [1..n-2],
+    gen (OpOp2 op2) = [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
                                           e0 <- findE i       ops infold,
                                           e1 <- findE (n-1-i) ops infold]
     gen OpIf0       = [ If0 e0 e1 e2 |  i <- [1..n-3], j <-[1..n-2-i], let k = n-1-i-j,
@@ -61,7 +62,8 @@ findE n ops infold = concat $ map gen ops
                                        e1 <- findE j ops infold,
                                        e2 <- findE k ops infold]
     gen OpFold      = [ Fold e0 e1 e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
-                                        e0 <- findE i (delete OpFold ops) True,
-                                        e1 <- findE j (delete OpFold ops) True,
-                                        e2 <- findE k (delete OpFold ops) True]
+                                         let newops = delete OpFold ops,
+                                        e0 <- findE i newops False,
+                                        e1 <- findE j newops False,
+                                        e2 <- findE k newops True]
 

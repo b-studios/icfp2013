@@ -47,6 +47,28 @@ data GuessResponse =
   deriving (Eq,Show)
 
 
+-- ** Submitting a Training Request
+
+-- | Send a request for an arbitrary training problem.
+trainRequest :: IO (Result TrainingProblem)
+trainRequest = performRequest "train" (TrainRequest Nothing Nothing)
+
+-- | Send a request for a training problem of a specified size.
+trainRequestSize :: Int -> IO (Result TrainingProblem)
+trainRequestSize n = performRequest "train" (TrainRequest (Just n) Nothing)
+
+-- | Send a request for a training problem of a specified size
+--   with specified ops.
+trainRequestSizeOps :: Int -> [Op1] -> [Op2] -> IO (Result TrainingProblem)
+trainRequestSizeOps n op1s op2s =
+    performRequest "train" (TrainRequest (Just n) (Just ops))
+  where ops = map show op1s ++ map show op2s
+
+-- TODO: Parse program string and op lists?
+data TrainingProblem = TrainingProblem String ProblemID Int [String]
+  deriving (Eq,Show)
+
+
 --
 -- * Internal Code
 --
@@ -167,6 +189,41 @@ instance JSON GuessResponse where
     ]
 
 
+data TrainRequest = TrainRequest (Maybe Int) (Maybe [String])
+  deriving (Eq,Show)
+
+instance JSON TrainRequest where
+  
+  readJSON (JSObject o) = do
+      n   <- lookupOpt m "size"
+      ops <- lookupOpt m "operators"
+      return (TrainRequest n ops)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading TrainRequest (not JSObject)."
+  
+  showJSON (TrainRequest n ops) =
+      JSObject $ toJSObject (optField "size" n ++ optField "operators" ops)
+
+instance JSON TrainingProblem where
+  
+  readJSON (JSObject o) = do
+      prog <- lookupReq m "challenge"
+      id   <- lookupReq m "id"
+      size <- lookupReq m "size"
+      ops  <- lookupReq m "operators"
+      return (TrainingProblem prog id size ops)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading TrainingProblem (not JSObject)."
+  
+  showJSON (TrainingProblem prog id size ops) =
+    JSObject $ toJSObject [
+      ("challenge", showJSON prog),
+      ("id", showJSON id),
+      ("size", showJSON size),
+      ("operators", showJSON ops)
+    ]
+
+
 -- ** HTTP Support Code
 
 urlRoot = "http://icfpc2013.cloudapp.net/"
@@ -227,18 +284,6 @@ instance JSON Problem where
 
 
 -- ** Unimplemented part of JSON spec **
-
-data TrainRequest = TrainRequest {
-  trainRequiest_size      :: Int,
-  trainRequiest_operators :: [String]
-}
-
-data TrainingProblem = TrainingProblem {
-  trainingProblem_challenge :: String,
-  trainingProblem_id        :: String,
-  trainingProblem_size      :: Int,
-  trainingProblem_operators :: [String]
-}
 
 data Status = Status {
   status_easyChairId    :: Int,
