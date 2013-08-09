@@ -15,6 +15,8 @@ import Lahnparty.Language
 -- * Client Interface
 --
 
+type ProblemID = String
+
 
 -- ** Submitting Evaluation Requests
 
@@ -22,14 +24,12 @@ import Lahnparty.Language
 --     1. request the results of solution for up to 256 arguments
 --     2. compute the results of a program for up to 256 arguments
 --   We implement only the first since we can compute the second on our own.
-data EvalRequest = EvalRequest {
-  evalRequest_id        :: String,  -- ^ Problem ID.
-  evalRequest_arguments :: [Word64] -- ^ Argument values.
-} deriving (Eq,Show)
+data EvalRequest = EvalRequest ProblemID [Word64]
+  deriving (Eq,Show)
 
 data EvalResponse = 
-    EvalResponseOK    { evalResponse_outputs :: [Word64] }
-  | EvalResponseError { evalResponse_message :: String }
+    EvalResponseOK [Word64]
+  | EvalResponseError String
   deriving (Eq,Show)
 
 -- | Send an evaluation request.
@@ -39,15 +39,13 @@ evalRequest = performRequest "eval"
 
 -- ** Submitting Guesses
 
-data Guess = Guess {
-  guess_id      :: String,
-  guess_program :: String
-}
+data Guess = Guess ProblemID String
+  deriving (Eq,Show)
 
 data GuessResponse =
     GuessResponseWin
-  | GuessResponseMismatch { guessResponse_values :: [Word64] }
-  | GuessResponseError    { guessResponse_message :: String }
+  | GuessResponseMismatch [Word64]
+  | GuessResponseError String
   deriving (Eq,Show)
 
 -- | Send a guess request.
