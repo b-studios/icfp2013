@@ -9,6 +9,7 @@ driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
   do
     let programs = gen size ops
+    mapM_ print $ take 10 programs
     let inputs = randomInputs programs
     result <- evalRequest probId inputs
     case result of
