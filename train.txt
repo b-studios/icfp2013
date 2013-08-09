@@ -1,0 +1,18 @@
+(lambda (X)
+  (fold X 0
+    (lambda (Z Y)
+      (plus
+        (shr4 (shl1 Z))
+        (shr16
+          (or Z
+            (and (not (not (shr1
+              (if0 (and (xor (shr16 (shr4 Z)) (shr1 Z)) Z) Z Y)
+              )))
+              Y
+            )
+          )
+        )
+      )
+    )
+  )
+)
