@@ -14,7 +14,13 @@ category:            Game
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable interpreter
-  main-is:             interpreter.hs
-  other-modules:       Language
+library
+  hs-source-dirs:      src-lib
+  exposed-modules:     Language
   build-depends:       base ==4.6.*
+
+executable interpreter
+  hs-source-dirs:      src-exec
+  main-is:             interpreter.hs
+  build-depends:       interpreter,
+                       base ==4.6.*
