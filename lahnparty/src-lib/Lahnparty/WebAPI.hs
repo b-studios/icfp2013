@@ -4,9 +4,10 @@ module Lahnparty.WebAPI where
 
 import Numeric
 
-import Data.Word
-import Network.HTTP hiding (Result)
+import Data.Word (Word64)
 import Text.JSON
+import Network.HTTP (ResponseCode,postRequestWithBody,simpleHTTP)
+import qualified Network.HTTP as HTTP
 
 import Lahnparty.Language
 
@@ -17,6 +18,14 @@ import Lahnparty.Language
 
 type ProblemID = String
 
+-- | Generic response to a request. Separates the various kinds of errors.
+data Response a =
+    OK a
+  | ConnectionError String
+  | HTTPError ResponseCode String
+  | JSONError String
+  deriving (Eq,Show)
+
 
 -- ** Submitting Evaluation Requests
 
@@ -25,7 +34,7 @@ type ProblemID = String
 --     1. request the results of solution for up to 256 arguments
 --     2. compute the results of a program for up to 256 arguments
 --   We implement only the first since we can compute the second on our own.
-evalRequest :: ProblemID -> [Word64] -> IO (Result EvalResponse)
+evalRequest :: ProblemID -> [Word64] -> IO (Response EvalResponse)
 evalRequest id vs = performRequest "eval" (EvalRequest id vs)
 
 data EvalResponse = 
@@ -37,11 +46,11 @@ data EvalResponse =
 -- ** Submitting Guesses
 
 -- | Send a guess request.
-guessRequest :: ProblemID -> P -> IO (Result GuessResponse)
+guessRequest :: ProblemID -> P -> IO (Response GuessResponse)
 guessRequest id p = performRequest "guess" (Guess id (prettyP p))
 
 -- | Send a guess request with a program represented as a string.
-guessRequestString :: ProblemID -> String -> IO (Result GuessResponse)
+guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)
 guessRequestString id s = performRequest "guess" (Guess id s)
 
 data GuessResponse =
@@ -54,16 +63,16 @@ data GuessResponse =
 -- ** Submitting a Training Request
 
 -- | Send a request for an arbitrary training problem.
-trainRequest :: IO (Result TrainingProblem)
+trainRequest :: IO (Response TrainingProblem)
 trainRequest = performRequest "train" (TrainRequest Nothing Nothing)
 
 -- | Send a request for a training problem of a specified size.
-trainRequestSize :: Int -> IO (Result TrainingProblem)
+trainRequestSize :: Int -> IO (Response TrainingProblem)
 trainRequestSize n = performRequest "train" (TrainRequest (Just n) Nothing)
 
 -- | Send a request for a training problem of a specified size
 --   with specified ops.
-trainRequestSizeOps :: Int -> [Op1] -> [Op2] -> IO (Result TrainingProblem)
+trainRequestSizeOps :: Int -> [Op1] -> [Op2] -> IO (Response TrainingProblem)
 trainRequestSizeOps n op1s op2s =
     performRequest "train" (TrainRequest (Just n) (Just ops))
   where ops = map show op1s ++ map show op2s
@@ -235,15 +244,16 @@ secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
 
 -- | Send an HTTP request.
 --   Clients should use `evalRequest` or `guessRequest`.
-performRequest :: (JSON a, JSON b) => String -> a -> IO (Result b)
+performRequest :: (JSON a, JSON b) => String -> a -> IO (Response b)
 performRequest path request = do
     result <- simpleHTTP $ postRequestWithBody url "application/json" (encode request)
     case result of
-      Left err -> return (Error (show err))
-      Right (Response code msg _ body) ->
-        if code == (2,0,0)
-          then return (decode body)
-          else return (Error ("HTTP Error: " ++ msg))
+      Left err -> return (ConnectionError (show err))
+      Right (HTTP.Response code msg _ body) -> return $
+        if code /= (2,0,0) then HTTPError code msg
+        else case decode body of
+               Ok a      -> OK a
+               Error msg -> JSONError msg
   where url = urlRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
 
 
