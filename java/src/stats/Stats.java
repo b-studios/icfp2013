@@ -62,7 +62,7 @@ public class Stats {
 			                 Integer.parseInt(o.get("size").toString(), 10),
 			                 (List) o.get("operators")));
 		}
-		
+		/*
 		System.out.format("Problem count: %d\n", myproblems.size());
 		
 		System.out.format("BySize: %s", bySize(myproblems));
@@ -71,13 +71,13 @@ public class Stats {
 		
 		System.out.println("all problems");
 		System.out.println(printHistogram(bySize(myproblems)));
-		
-		System.out.println("\nall problems without fold");
-		System.out.println(printHistogram(filter(bySize(myproblems), new ExcludesOpFilter(), "fold")));
+		*/
+		System.out.println("\nall problems without fold or tfold");
+		System.out.println(printHistogram(filter(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"), new ExcludesOpFilter(), "tfold")));
 
 		//printBySizeTreeMap(bySize(myproblems));
 		
-		printBySizeTreeMap(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"));
+		printBySizeTreeMap(filter(filter(bySize(myproblems), new ExcludesOpFilter(), "fold"), new ExcludesOpFilter(), "tfold"));
 		
 	}
 	
