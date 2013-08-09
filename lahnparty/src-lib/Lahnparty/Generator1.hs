@@ -18,11 +18,15 @@ instance Arbitrary Op1 where
 instance Arbitrary Op2 where
   arbitrary = elements [And, Or, Xor, Plus]
 
+constantE = elements [Zero, One]
+arbitraryVariable = Id <$> arbitrary
+
 instance Arbitrary E where
   arbitrary = oneof
-              [ elements [Zero, One]
-              , Id <$> arbitrary
+              [ constantE
+              , arbitraryVariable
               , If0 <$> arbitrary <*> arbitrary <*> arbitrary
               , Op1 <$> arbitrary <*> arbitrary
               , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
+              , Fold <$> arbitrary <*> arbitrary <*> arbitrary
               ]
