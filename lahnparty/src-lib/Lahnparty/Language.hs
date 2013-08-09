@@ -94,3 +94,43 @@ evalOp2 Plus = (+)
 listOfFoldedValues :: Word64 -> [Word64]
 listOfFoldedValues =
   take 8 . map (`shiftR` 56) . iterate (`shiftL` 8)
+
+--
+-- * Pretty printer
+--
+
+-- | Pretty print programs.
+prettyP :: P -> String
+prettyP (Lambda e) = "(lambda (input) " ++ prettyE e ++ ")"
+
+-- | Pretty print expressions.
+prettyE :: E -> String
+prettyE Zero            = "0"
+prettyE One             = "1"
+prettyE (Id Input)      = "input"
+prettyE (Id Byte)       = "byte"
+prettyE (Id Acc)        = "acc"
+prettyE (If0  e1 e2 e3) = "(if0 "  ++ prettyE e1 ++ " " 
+                                   ++ prettyE e2 ++ " "
+                                   ++ prettyE e3 ++ ")"
+prettyE (Fold e1 e2 e3) = "(fold " ++ prettyE e1 ++ " "
+                                   ++ prettyE e2 ++ " (lambda (byte acc) "
+                                   ++ prettyE e3 ++ "))"
+prettyE (Op1 o e)       = "(" ++ prettyOp1 o ++ " "
+                              ++ prettyE e ++ ")"
+prettyE (Op2 o e1 e2)   = "(" ++ prettyOp2 o ++ " "
+                              ++ prettyE e1 ++ " "
+                              ++ prettyE e2 ++ ")"
+
+prettyOp1 :: Op1 -> String
+prettyOp1 Not   = "not"
+prettyOp1 Shl1  = "shl1"
+prettyOp1 Shr1  = "shr1"
+prettyOp1 Shr4  = "shr4"
+prettyOp1 Shr16 = "shr16"
+
+prettyOp2 :: Op2 -> String
+prettyOp2 And  = "and"
+prettyOp2 Or   = "or"
+prettyOp2 Xor  = "xor"
+prettyOp2 Plus = "plus"
