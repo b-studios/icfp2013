@@ -34,6 +34,14 @@ data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
 data Op2 = And | Or | Xor | Plus
     deriving (Eq, Ord)
 
+data Op
+  = OpOp1 Op1
+  | OpOp2 Op2
+  | OpIf0
+  | OpFold 
+  | OpTFold
+    deriving (Eq, Ord)
+
 -- | Size of programs.
 
 sizeP :: P -> Int
@@ -147,3 +155,10 @@ instance Show P   where show = prettyP
 instance Show E   where show = prettyE
 instance Show Op1 where show = prettyOp1
 instance Show Op2 where show = prettyOp2
+
+instance Show Op where
+  show (OpOp1 o) = show o
+  show (OpOp2 o) = show o
+  show OpIf0     = "if0"
+  show OpFold    = "fold"
+  show OpTFold   = "tfold"

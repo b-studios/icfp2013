@@ -10,11 +10,6 @@ type Size = Int
 type InFold = Bool
 type MustFold = Bool
 
-data Op = OpOp1 Op1
-        | OpOp2 Op2
-        | OpIf0
-        | OpFold | OpTFold deriving (Show, Eq, Ord)
-
 isOp1 :: Op -> Bool
 isOp1 (OpOp1 _) = True
 isOp1 _ = False
