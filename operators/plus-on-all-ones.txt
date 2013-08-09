@@ -1,0 +1,15 @@
+
+
+{"program":"(lambda (x) (plus x x))",
+"arguments":[
+"0xFFFFFFFFFFFFFFFF"
+]}
+
+Result: success
+Content: 
+{
+    "status": "ok",
+    "outputs": [
+        "0xFFFFFFFFFFFFFFFE"
+    ]
+}
