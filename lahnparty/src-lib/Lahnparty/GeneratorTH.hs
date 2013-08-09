@@ -53,7 +53,7 @@ findE n ops infold = concat $ map gen ops
   where
     gen :: Op -> [E]
     gen (OpOp1 op1) = map (Op1 op1) $ findE (n-1) ops infold
-    gen (OpOp2 op2) = [ (Op2 op2) e0 e1 |  i <- [1..n-2],
+    gen (OpOp2 op2) = [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
                                           e0 <- findE i       ops infold,
                                           e1 <- findE (n-1-i) ops infold]
     gen OpIf0       = [ If0 e0 e1 e2 |  i <- [1..n-3], j <-[1..n-2-i], let k = n-1-i-j,
