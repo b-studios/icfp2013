@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, NoMonomorphismRestriction #-}
 module Lahnparty.Generator1 where
 
 import Lahnparty.Language
@@ -42,27 +42,28 @@ instance Arbitrary Op2 where
 constantE = elements [Zero, One]
 arbitraryVariable = Id <$> arbitrary
 
+arbitraryFoldParam arbOp = Fold <$> arbitrary <*> arbitrary <*> arbOp
+arbitraryFold =
+  (\arbOp -> [ arbitraryFoldParam arbOp ]) <$>
+                   do
+                     modify (\p -> p {inFold = True})
+                     return arbitrary
+
+arbitraryFirstOrderProgGens =
+  [ constantE
+  , arbitraryVariable
+  , If0 <$> arbitrary <*> arbitrary <*> arbitrary
+  , Op1 <$> arbitrary <*> arbitrary
+  , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
+  ]
+
 instance Arbitrary E where
-  arbitrary = oneof
-              [ constantE
-              , arbitraryVariable
-              , If0 <$> arbitrary <*> arbitrary <*> arbitrary
-              , Op1 <$> arbitrary <*> arbitrary
-              , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
-              , Fold <$> arbitrary <*> arbitrary <*> arbitrary
-              ]
+  arbitrary =
+    oneof
+    (arbitraryFirstOrderProgGens ++ [ Fold <$> arbitrary <*> arbitrary <*> arbitrary ])
 
 
 instance Arbitrary (State Params E) where
-  arbitrary = promote $ oneof <$>
-              ((++) <$>
-              return [ constantE
-                     , arbitraryVariable
-                     , If0 <$> arbitrary <*> arbitrary <*> arbitrary
-                     , Op1 <$> arbitrary <*> arbitrary
-                     , Op2 <$> arbitrary <*> arbitrary <*> arbitrary
-                     ]
-              <*> (
-                   (\arbOp -> [ Fold <$> arbitrary <*> arbitrary <*> arbOp ]) <$>
-                     (modify (\p -> p {inFold = True}) >> return arbitrary)))
+  arbitrary =
+    promote $ oneof <$> ((arbitraryFirstOrderProgGens ++) <$> arbitraryFold)
 
