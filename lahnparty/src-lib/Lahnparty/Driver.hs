@@ -7,10 +7,9 @@ import Lahnparty.ProblemsDB
 
 import Text.JSON
 
-driver :: Generator -> ProblemID -> IO ()
-driver gen probId =
+driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
+driver gen probId size ops =
   do
-    let (size, ops) = fetchData probId
     let programs = gen size ops
     let inputs = randomInputs programs
     result <- evalRequest probId inputs
@@ -43,3 +42,9 @@ filterProgs programs inputs outputs =
 
 randomInputs programs = [0 .. 255]
 
+{-
+main = do
+    -- let (size, ops) = fetchData probId
+    driver findP probId size ops
+
+-}
