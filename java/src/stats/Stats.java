@@ -60,7 +60,18 @@ public class Stats {
 		
 		System.out.println("\nall problems without fold");
 		System.out.println(printHistogram(filterExcludesOp(bySize(myproblems), "fold")));
+
+		printBySizeTreeMap(bySize(myproblems));
 		
+	}
+	
+	public static void printBySizeTreeMap(TreeMap<Integer, List<ProblemMetadata>> tm) {
+		for (Integer size : tm.keySet()) {
+			System.out.println("Size " + size);
+			for (ProblemMetadata pm : tm.get(size)) {
+				System.out.println(pm);
+			}
+		}
 	}
 
 	public static TreeMap<Integer, List<ProblemMetadata>> bySize(List<ProblemMetadata> l) {
@@ -75,8 +86,7 @@ public class Stats {
 		}
 		return tm;
 	}
-	
-	
+		
 	public static String printHistogram(TreeMap<Integer, List<ProblemMetadata>> tm) {
 		int max = -1;
 		for (Integer i : tm.keySet()) {
@@ -141,4 +151,18 @@ public class Stats {
 
 	}
 	
+	public static TreeMap<String, List<ProblemMetadata>> byOperator(List<ProblemMetadata> l) {
+		TreeMap<String, List<ProblemMetadata>> tm = new TreeMap<>();
+		for (ProblemMetadata pm : l) {
+			for (String operator : pm.operators) {
+				List vals = tm.get(operator);
+				if (vals == null) {
+					vals = new ArrayList<>();
+				}
+				vals.add(pm);
+				tm.put(operator, vals);
+			}
+		}
+		return tm;
+	}
 }
