@@ -5,8 +5,6 @@ import Lahnparty.WebAPI
 import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
 
-import Text.JSON
-
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
   do
@@ -14,7 +12,7 @@ driver gen probId size ops =
     let inputs = randomInputs programs
     result <- evalRequest probId inputs
     case result of
-      Ok (EvalResponseOK outputs) -> do
+      OK (EvalResponseOK outputs) -> do
         let programsFilt = filterProgs programs inputs outputs
         getMoreInfo probId programsFilt
 
@@ -28,12 +26,12 @@ getMoreInfo probId (p: programs) = do
   putStrLn $ "Guessing program " ++ prettyP p
   res <- guessRequest probId p
   case res of
-    Ok GuessResponseWin ->
+    OK GuessResponseWin ->
       return ()
-    Ok (GuessResponseError str) -> do
-      putStrLn "What? GuessResponseError " ++ str
+    OK (GuessResponseError str) -> do
+      putStrLn $ "What? GuessResponseError " ++ str
       getMoreInfo probId programs
-    Ok (GuessResponseMismatch words) ->
+    OK (GuessResponseMismatch words) ->
       getMoreInfo probId $ filterProgs programs [words !! 0] [words !! 1]
 
 filterProgs programs inputs outputs =
@@ -44,12 +42,13 @@ filterProgs programs inputs outputs =
 
 randomInputs programs = [0 .. 255]
 
-{-
+
 main = do
     -- let (size, ops) = fetchData probId
 
-    let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
-    let (size, ops) = (5, [])
-    driver findP probId size ops
+  
+  let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
+  let (size, ops) = (5, [OpOp1 Not, OpOp2 Plus])
+  driver findP probId size ops
 
--}
+-- Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
