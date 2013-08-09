@@ -4,6 +4,7 @@ import Lahnparty.Language
 import Lahnparty.WebAPI
 import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
+import Lahnparty.Types
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =

@@ -1,6 +1,7 @@
 module Lahnparty.GeneratorTH where
 
 import Lahnparty.Language
+import Lahnparty.Types
 import Data.List(delete)
 import Data.Word (Word64)
 
