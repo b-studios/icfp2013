@@ -12,6 +12,7 @@ expensiveDebug = True
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
   do
+    putStrLn $ "== ProblemID: " ++ probId ++ " =="
     let programs = gen size ops
     if (expensiveDebug)
        putStrLn $ "# generated programs: " ++ show (length programs)
