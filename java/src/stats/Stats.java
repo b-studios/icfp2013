@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.json.simple.JSONArray;
@@ -52,6 +53,13 @@ public class Stats {
 		
 		System.out.format("BySize: %s", bySize(myproblems));
 		
+		System.out.println("\n");
+		
+		System.out.println("all problems");
+		System.out.println(printHistogram(bySize(myproblems)));
+		
+		System.out.println("\nall problems without fold");
+		System.out.println(printHistogram(filterExcludesOp(bySize(myproblems), "fold")));
 		
 	}
 
@@ -67,4 +75,70 @@ public class Stats {
 		}
 		return tm;
 	}
+	
+	
+	public static String printHistogram(TreeMap<Integer, List<ProblemMetadata>> tm) {
+		int max = -1;
+		for (Integer i : tm.keySet()) {
+			if (i > max) {
+				max = i;
+			}
+		}
+		
+		int[] bins = new int[max+1];
+		
+		for (Entry<Integer, List<ProblemMetadata>> e : tm.entrySet()) {
+			bins[e.getKey()] = e.getValue().size();
+		}
+		
+		
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(pad("size",5));
+		sb.append(pad("#", 4));
+		sb.append("\n");
+		for (int i = 0; i < bins.length; i++) {
+			sb.append(pad(""+ i, 5));
+			sb.append(pad(""+bins[i], 4));
+			sb.append(repeat('#', bins[i]));
+			sb.append("\n");
+		}
+				
+		return sb.toString();
+	}
+	
+	private static String repeat(char symbol, int times) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < times; i++) {
+			sb.append(symbol);
+		}
+		return sb.toString();
+	}
+	
+	private static String pad(String string, int length) {
+		StringBuilder sb = new StringBuilder(string);
+		for (int i = string.length(); i < length; i++) {
+			sb.append(' ');
+		}
+		return sb.toString();
+	}
+	
+	private static TreeMap<Integer, List<ProblemMetadata>> filterExcludesOp(TreeMap<Integer, List<ProblemMetadata>> tm, String op) {
+		TreeMap<Integer, List<ProblemMetadata>> tm2 = new TreeMap<>();
+		
+		for (Entry<Integer, List<ProblemMetadata>> e : tm.entrySet()) {
+			List<ProblemMetadata> problems = e.getValue();
+			List<ProblemMetadata> newProblems = new LinkedList<>();
+			for (ProblemMetadata p : problems) {
+				if (!p.operators.contains(op)) {
+					newProblems.add(p);
+				}
+			}
+			tm2.put(e.getKey(), newProblems);
+		}
+		
+		return tm2;
+
+	}
+	
 }
