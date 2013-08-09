@@ -23,3 +23,8 @@ solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
       let (size,ops) = fetchData i
       driver g i size ops
       threadDelay (wait * 1000000)
+
+solveProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
+solveProblemsOfSizeFromTo g from to = mapM_ (solveProblemsOfSize g) [from .. to]
+
+main = solveProblemsOfSizeFromTo findP 3 8
