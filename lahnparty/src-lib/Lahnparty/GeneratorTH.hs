@@ -73,15 +73,15 @@ findE n ops infold mustfold = if (n<5 && mustfold)
     gen :: Op -> [E]
     gen (OpOp1 op1) = map (Op1 op1) $ findE (n-1) ops infold mustfold
     gen (OpOp2 op2) = if mustfold
-                        then [ (Op2 op2) e0 e1 |  i <- [5..((n-2) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
+                        then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
                                                  e0 <- findE i       ops  infold True,
                                                  e1 <- findE (n-1-i) ops' infold False]
-                          ++ [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
+                          ++ [ (Op2 op2) e0 e1 |  i <- [1..((n-1) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops' infold False,
                                                  e0 /= Zero,                                   -- prune: 0 binop e always ha ssmaller equivalent
                                                  e1 <- findE (n-1-i) ops  infold True]
 
-                        else [ (Op2 op2) e0 e1 |  i <- [1..((n-2) `div` 2)],                   -- optimization: e0 <=  e1
+                        else [ (Op2 op2) e0 e1 |  i <- [1..((n-1) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops infold False,
                                                  e0 /= Zero,                                   -- prune: 0 binop e always ha ssmaller equivalent
                                                  e1 <- findE (n-1-i) ops infold False]
