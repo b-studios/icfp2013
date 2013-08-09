@@ -1,24 +1,39 @@
 
 module Lahnparty.Test.WebAPI where
 
+import Network.HTTP (ResponseCode)
+
 import Test.Framework
 import Test.Framework.Providers.HUnit
-import Test.HUnit (assertEqual)
+import Test.HUnit (Assertion,assertEqual,assertFailure)
+
+import Lahnparty.WebAPI
+
 
 main = defaultMain tests
 
 tests = [testGuess]
 
+
 --
 -- * Test Cases
 --
 
+assertHTTPError :: Show a => ResponseCode -> Response a -> Assertion
+assertHTTPError exp (HTTPError act _) = assertEqual "" exp act
+assertHTTPError _   r = assertFailure $ "Expected HTTPError, got: " ++ show r
+
 -- ** Testing Guess
 
-testGuess = testGroup "TestGuess" []
+-- NOTE: This test fails because the server doesn't return the right error codes.
+
+testGuess = testGroup "TestGuess" [
 -- guess is syntactically malformed. Just think of bad syntax like `(lambda (x) `
 -- should return an error code (400)
-  -- testCase "Bad Request" 
+  testCase "Bad Request" $ do
+    r <- guessRequestString puID "(lambda (x) "
+    assertHTTPError (4,0,0) r
+  ]
 
 -- guess should recognise non existing challenge. (use `peID` for this)
 -- should return error code (404)
@@ -58,11 +73,12 @@ testGuess = testGroup "TestGuess" []
 -- * Test Data
 --
 
-p1ID  = "7AbvsYATqEwduM5HxvcXyja4"
-p1Sol = "(lambda (x_14561) (fold x_14561 0 (lambda (x_14561 x_14562) (if0 (or (not x_14561) (shl1 0)) 1 x_14561))))"
+-- Unsolved ID (don't solve!)
+puID  = "7AbvsYATqEwduM5HxvcXyja4"
+-- p1Sol = "(lambda (x_14561) (fold x_14561 0 (lambda (x_14561 x_14562) (if0 (or (not x_14561) (shl1 0)) 1 x_14561))))"
 
--- not existing ID
-peID  = "99mOAP9nB1F8sHZz7TjG0Hzl"
+-- Nonexistent ID
+pnID  = "99mOAP9nB1F8sHZz7TjG0Hzl"
 
--- already solved ID
+-- Already solved ID
 psID  = "MFrVnSUaIMxUZ38ZDqBzwkwz"
