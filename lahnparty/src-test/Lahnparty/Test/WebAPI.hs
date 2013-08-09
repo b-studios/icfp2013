@@ -20,7 +20,7 @@ testGuess = testGroup "TestGuess" []
 -- should return an error code (400)
   -- testCase "Bad Request" 
 
--- guess is on non existing challange. DOUBLE check whether challange does not exist before
+-- guess is on non existing challenge. DOUBLE check whether challange does not exist before
 -- running this test!
 -- should return error code (404)
 
@@ -34,6 +34,13 @@ testGuess = testGroup "TestGuess" []
 -- guess should raise an error if the request is too big
 -- should return error code (413)
 
+-- guess should tell "win" if successfully guessed.
+-- should return error code (200) and `status` should be "win"
+-- this should be implemented by querying a fresh test and then directly solve it
+
+-- guess should provide counter example on "mismatch" (Using `(lambda (x) x)`))
+-- should return error code (200), `status` should be "mismatch" and `values` should
+-- be ["0x8000000000000000", "0x0000000000000080", "0x8000000000000000"]
 
 --
 -- * Test Data
