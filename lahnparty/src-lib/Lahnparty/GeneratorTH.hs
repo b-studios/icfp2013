@@ -54,7 +54,7 @@ findP size ops =
 
 
 -- | Generates expressions of given size using (a subset) of given operators. 
---   May omit expressions that have shorter equivalents (but currently does not).
+--   May omit expressions that have shorter equivalents.
 --   Fold will only be used if the flag mustfold is set; but if the flag is set it will definitely be used.
 --   (It must still be present in the  oplist).
 findE :: Size -> [Op] -> InFold -> MustFold -> [E]
@@ -126,3 +126,9 @@ findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])             
                                                 e2 /= (Id Input),
                                                 e0 <- findE i newops False False,
                                                 e1 <- findE j newops False False]
+
+-- number of generated programs for given size using all operators:
+-- size  7:    379164
+-- size  8:   3278604
+-- size  9:  30308787
+-- size 10: 276005523
