@@ -29,29 +29,29 @@ driver gen probId size ops =
     let programs = gen size ops
     when expensiveDebug $
        putStrLn $ "# generated programs: " ++ show (length programs)
+
     putStrLn $ "First 10 generated programs:"
 
     mapM_ print $ take 10 programs
 
     let inputs = randomInputs programs
     result <- evalRequest probId inputs
+
     case result of
+
       OK (EvalResponseOK outputs) -> do
         let programsFilt = filterProgs programs inputs outputs
         when expensiveDebug $
            putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
-
         putStrLn $ "First 10 generated programs after filtering:"
-
         mapM_ print $ take 10 programsFilt
-
         getMoreInfo probId programsFilt
       
       HTTPError (4,2,9) _ -> do
         putStrLn "Too many requests, trying again."
         threadDelay 5000000 -- 5 seconds
         driver gen probId size ops
-      
+
       err -> do
         unexpected err probId
 
