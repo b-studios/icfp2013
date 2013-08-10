@@ -17,8 +17,8 @@ nofoldops = [OpOp1 Not,
              OpOp2 Plus,
              OpIf0]
 
-programs size = findP size nofoldops
-                ++ findP size (OpFold:nofoldops)
+programs size = findP size nofoldops undefined
+                ++ findP size (OpFold:nofoldops) undefined
 
 main = do
          args <- getArgs
