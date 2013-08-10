@@ -29,10 +29,10 @@ data E
     deriving (Eq, Ord)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Enum, Bounded)
 
 data Op2 = And | Or | Xor | Plus
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Enum, Bounded)
 
 data Op
   = OpOp1 !Op1

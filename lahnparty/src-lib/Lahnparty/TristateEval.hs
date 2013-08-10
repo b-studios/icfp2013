@@ -9,6 +9,7 @@ import Lahnparty.Language
 
 -- Unbox/unpack this record.
 data TristateWord = T { bits :: Word64, bitMask :: Word64 }
+  deriving (Eq, Show)
 
 normalizeTristate (T bits mask) = T (bits .&. mask) mask
 
