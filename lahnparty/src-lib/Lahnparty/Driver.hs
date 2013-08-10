@@ -465,9 +465,13 @@ solveATrainProblemOfSize g ops size = do
 
 solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
 solveDistTrainingProblem g wid ops size = do
-    OK (DistTrainingProblem prob wnum wtot) <- distTrainRequest wid size ops
-    putStrLn $ "Problem: " ++ show prob
-    putStrLn $ "Worker Number: " ++ show wnum
-    putStrLn $ "Total Workers: " ++ show wtot
-    let (pid,size,ops) = parseTrainingData (OK prob)
-    distDriver wid findP pid size ops
+    resp <- distTrainRequest wid size ops
+    print resp
+    case resp of
+      OK (DistTrainingProblem prob wnum wtot) -> do
+        putStrLn $ "Problem: " ++ show prob
+        putStrLn $ "Worker Number: " ++ show wnum
+        putStrLn $ "Total Workers: " ++ show wtot
+        let (pid,size,ops) = parseTrainingData (OK prob)
+        distDriver wid findP pid size ops
+      _ -> error "Boom."

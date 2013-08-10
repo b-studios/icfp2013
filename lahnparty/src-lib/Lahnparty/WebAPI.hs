@@ -107,7 +107,7 @@ distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid v
 -- | Send a training request as a distributed worker.
 distTrainRequest :: WorkerID -> Size -> TrainOps -> IO (Response DistTrainingProblem)
 distTrainRequest wid n fold =
-    performRequest "train" (TrainRequest (Just n) (Just ops))
+    performRequest "register" (DistTrainRequest wid (TrainRequest (Just n) (Just ops)))
   where ops = case fold of TrainNone  -> []
                            TrainFold  -> ["fold"]
                            TrainTFold -> ["tfold"]
@@ -291,8 +291,8 @@ instance JSON RegisterRequest where
 instance JSON DistProblem where
   
   readJSON (JSObject o) = do
-      pid  <- lookupReq m "id"
-      wnum <- lookupReq m "workerNum"
+      pid  <- lookupReq m "workerID"
+      wnum <- lookupReq m "workerNumber"
       wtot <- lookupReq m "totalWorkers"
       return (DistProblem pid wnum wtot)
     where m = fromJSObject o
@@ -300,17 +300,35 @@ instance JSON DistProblem where
 
   showJSON (DistProblem pid wnum wtot) =
       JSObject $ toJSObject [
-        ("id", showJSON pid),
+        ("workerID", showJSON pid),
         ("workerNumber", showJSON wnum),
         ("totalWorkers", showJSON wtot)
       ]
+
+
+data DistTrainRequest = DistTrainRequest WorkerID TrainRequest
+  deriving (Eq,Show)
+  
+instance JSON DistTrainRequest where
+  
+  readJSON (JSObject o) = do
+      wid <- lookupReq m "workerID"
+      req <- readJSON (JSObject o)
+      return (DistTrainRequest wid req)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading DistTrainRequest (not JSObject)."
+
+  showJSON (DistTrainRequest wid req) =
+      JSObject $ toJSObject $
+      fromJSObject reqObj ++ [("workerID", showJSON wid)]
+    where (JSObject reqObj) = showJSON req
 
 
 instance JSON DistTrainingProblem where
   
   readJSON (JSObject o) = do
       prob <- readJSON (JSObject o)
-      wnum <- lookupReq m "workerNum"
+      wnum <- lookupReq m "workerNumber"
       wtot <- lookupReq m "totalWorkers"
       return (DistTrainingProblem prob wnum wtot)
     where m = fromJSObject o
@@ -328,6 +346,7 @@ instance JSON DistTrainingProblem where
 -- ** HTTP Support Code
 
 urlRoot = "http://icfpc2013.cloudapp.net/"
+-- urlRoot = "http://jona:3000/"
 secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
 
 -- | Send an HTTP request.
