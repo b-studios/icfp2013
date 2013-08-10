@@ -12,11 +12,12 @@ import Control.Monad
 -- XXX disable in production, it changes memory usage
 expensiveDebug = False
 
+unexpected :: Show t => Response t -> Maybe ProblemID -> IO b
 unexpected err probId = do
   case err of
     HTTPError (4,1,0) str ->
       do
-        putStrLn $ ">>> We failed for timeout on problem ID" ++ show probId
+        putStrLn $ ">>> We failed for timeout" ++ maybe "" (\probId -> "on problem ID" ++ show probId) probId
     _ -> return ()
 
   print err
@@ -74,7 +75,7 @@ driver gen probId size ops =
         driver gen probId size ops
 
       err -> do
-        unexpected err probId
+        unexpected err $ Just probId
 
     return ()
 
@@ -102,7 +103,7 @@ getMoreInfo probId (p : programs) = do
       getMoreInfo probId (p : programs)
 
     err ->
-      unexpected err probId
+      unexpected err $ Just probId
 
 filterProgs programs inputs outputs =
   [ program
@@ -377,18 +378,18 @@ randomInputs programs =
   ]
 
 
-fetchTrainingData size ops =
+fetchTrainingData size ops = do
   resp <- trainRequestSizeOps size ops
-  case resp in
+  case resp of
    OK (TrainingProblem program id size operators) ->
-     resp
+     return resp
 
    HTTPError (4,2,9) _ -> do
      waitForRateLimit429
      fetchTrainingData size ops
 
    err -> do
-     unexpected err probId
+     unexpected err Nothing
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData req =
