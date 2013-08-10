@@ -20,6 +20,8 @@ orDefined t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T bitsRes maskRes
     maskRes = mask1 .|. mask2
 
 tristateConst v = T v $ complement 0
+tristateUndef = T 0 0
+
 instance ProgData TristateWord where
   zero = tristateConst 0
   one  = tristateConst 1
@@ -52,7 +54,7 @@ evalOp2Tristate
   :: Op2 -> TristateWord -> TristateWord -> TristateWord
 
 -- XXX Plus needs a different logic, return an undefined result
-evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T 0 0
+evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = tristateUndef
 
 -- This evaluates one operation with 6-7 operations.
 evalOp2Tristate op2 t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) =
