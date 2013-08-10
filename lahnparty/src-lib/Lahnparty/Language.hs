@@ -3,6 +3,9 @@ module Lahnparty.Language where
 import Data.Bits
 import Data.Word (Word64)
 
+import Control.Applicative
+import Control.Monad.Identity
+
 data Id =
   -- | The overall input (bound by the top-level lambda).
   Input
@@ -62,29 +65,31 @@ sizeE (Op2 _ e1 e2) = 1 + sizeE e1 + sizeE e2
 
 evalP :: Word64 -> P -> Word64
 evalP input (Lambda e) =
-  evalE input (error "not in fold") (error "not in fold") e
+  runIdentity $ evalE (pure input) (error "not in fold") (error "not in fold") e
 
 -- | Evaluate expressions.
 
-evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
-evalE input byte acc Zero = 0
-evalE input byte acc One = 1
+evalE :: Applicative f => f Word64 -> f Word64 -> f Word64 -> E -> f Word64
+evalE input byte acc Zero = pure 0
+evalE input byte acc One = pure 1
 evalE input byte acc (Id Input) = input
 evalE input byte acc (Id Byte) = byte
 evalE input byte acc (Id Acc) = acc
 evalE input byte acc (If0 e1 e2 e3) =
-  if evalE input byte acc e1 == 0
-    then evalE input byte acc e2
-    else evalE input byte acc e3
-evalE input byte acc (Fold e0 e1 e2) = foldr f initial values
-  where
-    values = listOfFoldedValues (evalE input byte acc e0)
-    initial = evalE input byte acc e1
-    f x y = evalE input x y e2
+  (\cond thenBranch elseBranch ->
+    if cond == 0 
+      then thenBranch
+      else elseBranch)
+   <$> evalE input byte acc e1 <*> evalE input byte acc e2 <*> evalE input byte acc e3
+-- evalE input byte acc (Fold e0 e1 e2) = foldr f <$> initial <*> values
+--   where
+--     values = listOfFoldedValues <$> (evalE input byte acc e0)
+--     initial = evalE input byte acc e1
+--     f x y = evalE input x y e2
 evalE input byte acc (Op1 op1 e1) =
-  evalOp1 op1 (evalE input byte acc e1)
+  evalOp1 op1 <$> (evalE input byte acc e1)
 evalE input byte acc (Op2 op2 e1 e2) =
-  evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
+  evalOp2 op2 <$> (evalE input byte acc e1) <*> (evalE input byte acc e2)
 
 evalOp1 :: Op1 -> Word64 -> Word64
 evalOp1 Not = complement
