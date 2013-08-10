@@ -65,6 +65,11 @@ findE 1 _   _      True = []
 findE 1 _   False  _    = [Id Input, One, Zero]
 findE 1 _   True   _    = [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True = []
+
+-- XXX Here (n = 2 and above) we ignore mustfold, so it's not guaranteed that
+-- *all* results will contain fold. However, if 2 < n < 5, we return no results
+-- if mustfold is true. This behavior is inconsistent with the description, so
+-- one of the two should be fixed (not sure which).
 findE 2 ops infold _    = let ops1 = map (\(OpOp1 op) -> Op1 op) $ filter isOp1 ops 
                           in concat $ zipWith (map) ops1 (repeat (findE 1 undefined infold False))
 findE n ops infold mustfold = if (n<5 && mustfold) 
@@ -76,6 +81,8 @@ findE n ops infold mustfold = if (n<5 && mustfold)
     gen :: Op -> [E]
     gen (OpOp1 op1) = map (Op1 op1) $ findE (n-1) ops infold mustfold
     gen (OpOp2 op2) = if mustfold
+                      -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
+
                         then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
                                                  e0 <- findE i       ops  infold True,
                                                  e1 <- findE (n-1-i) ops' infold False]
