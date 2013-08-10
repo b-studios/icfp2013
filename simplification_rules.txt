@@ -21,4 +21,7 @@ if0 1 e1 e2 -> e2 ..implemented
 
 more complicated:
 x xor x -> 0
+x and x -> x
+x or x -> x
+
 jeder fold mit einer konstanten funktion (generiere nur, was auch auf 
