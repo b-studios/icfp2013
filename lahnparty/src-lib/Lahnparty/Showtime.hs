@@ -27,4 +27,4 @@ solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
 solveProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
 solveProblemsOfSizeFromTo g from to = mapM_ (solveProblemsOfSize g) [from .. to]
 
-main = solveProblemsOfSizeFromTo findP 4 4
+main = solveProblemsOfSizeFromTo findP 8 8
