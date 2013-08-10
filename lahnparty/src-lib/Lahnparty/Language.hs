@@ -12,21 +12,21 @@ data Id =
 
   -- | The current accumulator (second variable bound by lambda in fold).
   | Acc
-    deriving Eq
+    deriving (Eq, Ord)
 
 data P
-  = Lambda E
+  = Lambda !E
     deriving Eq
 
 data E
   = Zero
   | One
-  | Id Id
-  | If0 E E E
-  | Fold E E E
-  | Op1 Op1 E
-  | Op2 Op2 E E
-    deriving Eq
+  | Id !Id
+  | If0 !E !E !E
+  | Fold !E !E !E
+  | Op1 !Op1 !E
+  | Op2 !Op2 !E !E
+    deriving (Eq, Ord)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
     deriving (Eq, Ord)
@@ -35,8 +35,8 @@ data Op2 = And | Or | Xor | Plus
     deriving (Eq, Ord)
 
 data Op
-  = OpOp1 Op1
-  | OpOp2 Op2
+  = OpOp1 !Op1
+  | OpOp2 !Op2
   | OpIf0
   | OpFold 
   | OpTFold

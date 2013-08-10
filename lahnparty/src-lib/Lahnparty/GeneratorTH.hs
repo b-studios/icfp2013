@@ -49,12 +49,21 @@ findP size ops =
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concat $ map (\s -> findETopFold s (delete OpTFold ops)) [5..size - 1]
+     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops)) [5..size - 1]
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
-     map Lambda $ concat $ map (\s -> findE s ops False (OpFold `elem` ops)) [1..size - 1]
+     map Lambda $ concatMap (\s -> findE s ops False (OpFold `elem` ops)) [1..size - 1]
 
 
+
+newtype SizedE = SizedE E
+            deriving Eq
+instance Ord SizedE where
+  -- XXX Is this a valid order? I think so, since it's just a special lexicographic ordering. PG
+  compare (SizedE e1) (SizedE e2) =
+    case (compare (sizeE e1) (sizeE e2)) of
+      EQ -> compare e1 e2
+      res -> res
 
 -- | Generates expressions of given size using (a subset) of given operators. 
 --   May omit expressions that have shorter equivalents.
@@ -86,16 +95,26 @@ findE n ops infold mustfold = if (n<5 && mustfold)
 
                         then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
                                                  e0 <- findE i       ops  infold True,         -- XXX don't we need e0 /= Zero, since mustfold = True currently doesn't imply we get a program with a fold?
-                                                 e1 <- findE (n-1-i) ops' infold False]
+                                                 e1 <- findE (n-1-i) ops' infold False,
+                                                 e0 <= e1
+                             ]
+
                           ++ [ (Op2 op2) e0 e1 |  i <- [1..((n-1) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops' infold False,
-                                                 e0 /= Zero,                                   -- prune: 0 binop e always has smaller equivalent
-                                                 e1 <- findE (n-1-i) ops  infold True]
+                                                 e0 /= Zero,                                   -- prune: 0 binop e always has smaller equivalent. e binop 0 is discarded by the ordering constraint
+                                                 e1 <- findE (n-1-i) ops  infold True,
+                                                 e0 <= e1
+                             ]
+                          -- Instead of just |e0| <= |e1|, we use SizedE e0 <= SizedE e1, since E is now instance of Ord. That guarantees that e0 <= e1 implies |e0| <= |e1|, so we can
+                          -- first ensure |e0| <= |e1| (by not generating cases violating this invariant, which saves time) and then that
 
                         else [ (Op2 op2) e0 e1 |  i <- [1..((n-1) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops infold False,
-                                                 e0 /= Zero,                                   -- prune: 0 binop e always has smaller equivalent
-                                                 e1 <- findE (n-1-i) ops infold False]
+                                                 e0 /= Zero,                                   -- prune: 0 binop e always has smaller equivalent. e binop 0 is discarded by the ordering constraint
+                                                 e1 <- findE (n-1-i) ops infold False,
+                                                 e0 <= e1
+                             ]
+
     gen OpIf0       = if mustfold
                         then [ If0 e0 e1 e2 |  i <- [5..n-3], j <-[1..n-2-i], let k = n-1-i-j,
                                               e0 <- findE i ops  infold True,
@@ -109,10 +128,14 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                               e2 <- findE k ops' infold False]
                           ++ [ If0 e0 e1 e2 |  i <- [1..n-7], j <-[1..n-6-i], let k = n-1-i-j,
                                               e0 <- findE i ops' infold False,
+                                              e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                              e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
                                               e1 <- findE j ops' infold False,
                                               e2 <- findE k ops  infold True]
                         else [ If0 e0 e1 e2 |  i <- [1..n-3], j <-[1..n-2-i], let k = n-1-i-j,
                                               e0 <- findE i ops infold False,
+                                              e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                              e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
                                               e1 <- findE j ops infold False,
                                               e2 <- findE k ops infold False]
     gen OpFold      = if mustfold 
