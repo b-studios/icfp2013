@@ -21,6 +21,7 @@ library
                        Lahnparty.Generator1,
                        Lahnparty.Generator2,
                        Lahnparty.GeneratorTH,
+                       Lahnparty.GeneratorTH2,
                        Lahnparty.WebAPI,
                        Lahnparty.ProblemsDB,
                        Lahnparty.Driver,
@@ -28,7 +29,7 @@ library
                        Lahnparty.Retry,
                        Lahnparty.Types
 
-  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers
+  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers, vector
 
 executable lahnparty-solver-real
   ghc-options:         -O2
@@ -49,6 +50,14 @@ executable lahnparty-measure
   hs-source-dirs:      src-exec
   main-is:             measure.hs
   build-depends:       lahnparty,
+                       base >= 4.5
+
+executable lahnparty-measure2
+  ghc-options:         -O2
+  hs-source-dirs:      src-exec
+  main-is:             measure2.hs
+  build-depends:       lahnparty,
+                       vector,
                        base >= 4.5
 
 test-suite lahnparty-tests
