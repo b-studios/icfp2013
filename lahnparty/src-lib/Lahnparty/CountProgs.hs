@@ -7,7 +7,7 @@ data Params = Size
   , nBinaryOps :: Int  -- 0 .. 4
   , if0There   :: Bool
   , withinFold :: Bool
-  , foldUsed   :: Bool
+  , avoidFolds :: Bool -- This tells if we are allowed to use 
   }
     deriving Show
 
@@ -30,15 +30,12 @@ nExps sizes size
          | condSize <- [ 1 .. size - 3 ]
          , thenSize <- [ 1 .. size - 2 - condSize ]
          , let elseSize = size - condSize - thenSize - 1 ])
-  + opt (not . foldUsed) sizes
+  + opt (not . avoidFolds) sizes
        (sum
          [ nExps sizesNoFold condSize * nExps sizesNoFold thenSize * nExps sizesInFold elseSize
          | condSize <- [ 1 .. size - 4 ]
          , thenSize <- [ 1 .. size - 3 - condSize ]
          , let elseSize = size - condSize - thenSize - 2 ])
        where
-         sizesNoFold = sizes { foldUsed = True }
+         sizesNoFold = sizes { avoidFolds = True }
          sizesInFold = sizesNoFold { withinFold = True }
-
-  -- nBinaryOps * 
-  -- \sum_{i=1}^(size-2) nBinaryOps * nExps sizes i * nExps sizes (size - 1 - i)
