@@ -1,42 +1,54 @@
 module Lahnparty.Driver where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad
+import System.Exit (exitFailure)
+
 
 import Lahnparty.Language
 import Lahnparty.WebAPI
 import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
-import Control.Monad
 
 -- XXX disable in production, it changes memory usage
 expensiveDebug = False
 
-unexpected :: Show t => Response t -> Maybe ProblemID -> IO b
-unexpected err probId = do
+-- | Unexpected error, fail. This should only be used if the timer is not
+--   currently running on a problem.
+failUnexpected :: Show t => Response t -> Maybe ProblemID -> IO a
+failUnexpected err pid = do
+  failOnTimeout err pid            -- check for timeout
+  putStrLn "Exiting defensively."  -- unknown error
+  exitFailure
+
+-- | Fail on a timeout, otherwise continue.
+failOnTimeout :: Show t => Response t -> Maybe ProblemID -> IO ()
+failOnTimeout err pid = do
   case err of
-    HTTPError (4,1,0) str ->
-      do
-        putStrLn $ ">>> We failed for timeout" ++ maybe "" (\probId -> "on problem ID" ++ show probId) probId
-    _ -> return ()
+    HTTPError (4,1,0) str -> do
+      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> "on problem ID" ++ show i) pid
+      putStrLn $ "Error message: " ++ str
+      exitFailure
+    _ -> do
+      putStrLn $ "Unknown error: " ++ show err
+      return ()
 
-  print err
-  error "Exiting defensively for a failure"
-
+-- | Wait a few seconds because of a too many requests error.
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
   threadDelay 5000000 -- 5 seconds
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
-driver gen probId size ops =
-  do
+driver gen probId size ops = do
+    
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
+    
     let programs = gen size ops
     when expensiveDebug $
        putStrLn $ "# generated programs: " ++ show (length programs)
 
     putStrLn $ "First 10 generated programs:"
-
     mapM_ print $ take 10 programs
 
     let inputs = randomInputs programs
@@ -58,7 +70,9 @@ driver gen probId size ops =
         driver gen probId size ops
 
       err -> do
-        unexpected err $ Just probId
+        failOnTimeout err (Just probId)
+        putStrLn "Exiting defensively."
+        exitFailure
 
     return ()
 
@@ -66,27 +80,36 @@ getMoreInfo probId [] = do
   putStrLn "No more possible programs"
   return ()
 
-getMoreInfo probId (p : programs) = do
-  putStrLn $ "Guessing program " ++ prettyP p
-  res <- guessRequest probId p
-  case res of
-    OK GuessResponseWin -> do
-      putStrLn "We won!"
-      return ()
-    OK (GuessResponseError str) -> do
-      putStrLn $ "What? GuessResponseError " ++ str
-      getMoreInfo probId programs
-    OK (GuessResponseMismatch words) -> do
-      let programsFilt = filterProgs programs [words !! 0] [words !! 1]
-      putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length programsFilt)
-      getMoreInfo probId programsFilt
-
-    HTTPError (4,2,9) _ -> do
-      waitForRateLimit429
-      getMoreInfo probId (p : programs)
+getMoreInfo pid (p:ps) = do
     
-    err ->
-      unexpected err $ Just probId
+    putStrLn $ "Guessing program " ++ prettyP p
+    res <- guessRequest pid p
+    
+    case res of
+      
+      OK GuessResponseWin -> do
+        putStrLn "We won!"
+        return ()
+      OK (GuessResponseError str) -> do
+        putStrLn $ "What? GuessResponseError " ++ str
+        getMoreInfo pid ps
+      OK (GuessResponseMismatch words) -> do
+        putStrLn "Guess mismatch, filtering ..."
+        let programsFilt = filterProgs ps [words !! 0] [words !! 1]
+        putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
+        getMoreInfo pid programsFilt
+
+      HTTPError (4,2,9) _ -> do
+        waitForRateLimit429
+        tryAgain
+
+      err -> do
+        failOnTimeout err (Just pid)
+        putStrLn "Timer is still running, so trying again."
+        tryAgain
+  
+  where
+    tryAgain = getMoreInfo pid (p:ps)
 
 
 filterProgs programs inputs outputs =
@@ -365,15 +388,13 @@ randomInputs programs =
 fetchTrainingData size ops = do
   resp <- trainRequestSizeOps size ops
   case resp of
-   OK (TrainingProblem program id size operators) ->
-     return resp
-
-   HTTPError (4,2,9) _ -> do
-     waitForRateLimit429
-     fetchTrainingData size ops
-
-   err -> do
-     unexpected err Nothing
+    OK (TrainingProblem program id size operators) ->
+      return resp
+    HTTPError (4,2,9) _ -> do
+      waitForRateLimit429
+      fetchTrainingData size ops
+    err -> do
+      failUnexpected err Nothing
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData req =
