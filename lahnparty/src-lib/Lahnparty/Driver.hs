@@ -376,6 +376,104 @@ opStringToOp "xor" = OpOp2 Xor
 opStringToOp "plus" = OpOp2 Plus
 
 main = do
+{-
+  -- let (size, ops) = fetchData probId
+
+  trainingRes <- trainRequestSizeOps size [] []
+  case trainingRes of
+    OK (
+-}
+
+{-
+-- > Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
+
+  let probId = "Qae2h1FwmKd3cTPhFhzSTAKS"
+  let ops = [OpOp1 Not, OpOp2 Plus]
+  let size = 5
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_4532) (shr1 (plus (shr4 x_4532) x_4532)))" "0hrq0OWVo5Jr3jLx3MdSu2gk" 6 ["plus","shr1","shr4"])
+
+  let probId = "0hrq0OWVo5Jr3jLx3MdSu2gk"
+  let ops = [OpOp1 Shr1, OpOp1 Shr4, OpOp2 Plus]
+  let size = 6
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_6568) (and (xor (shr16 1) x_6568) 1))" "TNiswT0spxNMaDGraOAnGbvf" 7 ["and","shr16","xor"])
+
+  let probId = "TNiswT0spxNMaDGraOAnGbvf"
+  let ops = [OpOp1 Shr16, OpOp2 Xor, OpOp2 And]
+  let size = 7
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_6379) (plus (or x_6379 (shl1 0)) x_6379))" "8MWn1BJfNFLJ16JoB8U1FkUm" 7 ["or","plus","shl1"])
+  let probId = "8MWn1BJfNFLJ16JoB8U1FkUm"
+  let ops = [OpOp1 Shl1, OpOp2 Plus, OpOp2 Or]
+  let size = 7
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_7546) (or (xor (shr16 (shr1 x_7546)) 0) 0))" "qS4P8cvo9TDt9LaB76wM77Ev" 8 ["or","shr1","shr16","xor"])
+
+  let probId = "qS4P8cvo9TDt9LaB76wM77Ev"
+  let ops = [OpOp1 Shr1, OpOp1 Shr16, OpOp2 Xor, OpOp2 Or]
+  let size = 8
+-}
+-- OK (TrainingProblem "(lambda (x_8798) (if0 (and (xor 1 x_8798) 1) 1 x_8798))"
+-- "MPTvIpeMhkYwtOBwBcbXiZRi" 9 ["and","if0","xor"])
+{-
+  let probId = "MPTvIpeMhkYwtOBwBcbXiZRi"
+  let ops = [OpIf0, OpOp2 Xor, OpOp2 And]
+  let size = 9
+-}
+
+{-
+*Lahnparty.WebAPI> trainRequestSizeOps 3 TrainNone
+OK (TrainingProblem "(lambda (x_359) (shl1 x_359))" "K9KERyo1qE4MriwdQjU2q9OW" 3 ["shl1"])
+*Lahnparty.WebAPI> trainRequestSizeOps 15 TrainTFold
+OK (TrainingProblem "(lambda (x_18033) (fold x_18033 0 (lambda (x_18033 x_18034) (shr1 (if0 (and (plus 1 (shr16 x_18034)) x_18033) 0 x_18033)))))" "24QYAJQPDDZ7GZf7w57sSxmW" 15 ["and","if0","plus","shr1","shr16","tfold"])
+*Lahnparty.WebAPI> trainRequestSizeOps 10 TrainTFold
+OK (TrainingProblem "(lambda (x_7091) (fold x_7091 0 (lambda (x_7091 x_7092) (shl1 (if0 x_7092 x_7091 x_7092)))))" "Ad92gcnd5hYx5ulv1uhSbA7R" 10 ["if0","shl1","tfold"])
+*Lahnparty.WebAPI> trainRequestSizeOps 7 TrainTFold
+HTTPError (4,0,4) "no such combination "
+-}
+
+{-
+*Lahnparty.WebAPI> trainRequestSizeOps 8 TrainTFold
+OK (TrainingProblem "(lambda (x_3395) (fold x_3395 0 (lambda (x_3395 x_3396) (and 1 x_3395))))" "fyrc55nEx1G1wWfsD1m7mesM" 8 ["and","tfold"])
+
+  let probId = "fyrc55nEx1G1wWfsD1m7mesM"
+  let ops = [OpTFold, OpOp2 And]
+  let size = 8
+-}
+
+{-
+*Lahnparty.WebAPI> trainRequestSizeOps 10 TrainFold
+HTTPError (4,0,4) "no such combination "
+*Lahnparty.WebAPI> trainRequestSizeOps 12 TrainFold
+OK (TrainingProblem "(lambda (x_16494) (fold (not (xor x_16494 x_16494)) x_16494 (lambda (x_16495 x_16496) (or (shr4 x_16496) x_16495))))" "jZdHTWFBfYsikxfBiVAKUZAS" 12 ["fold","not","or","shr4","xor"])
+-}
+
+{-
+
+  let probId = "jZdHTWFBfYsikxfBiVAKUZAS"
+  let ops = [OpFold, OpOp1 Not, OpOp1 Shr4, OpOp2 Or, OpOp2 Xor]
+  let size = 12
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_923) (fold x_923 0 (lambda (x_923 x_924) (or x_923 1))))" "53qUPaAUt4Su7xKMnNCvTxPW" 8 ["or","tfold"])
+  let (probId, size, ops) = ("53qUPaAUt4Su7xKMnNCvTxPW", 8, map opStringToOp ["or","tfold"])
+-}
+
+{-
+-- OK (TrainingProblem "(lambda (x_1353) (fold x_1353 0 (lambda (x_1353 x_1354) (shr1 (shr4 x_1353)))))" "fgoi6eGXPp9PkN313nsJ3vaf" 8 ["shr1","shr4","tfold"])
+  let (probId, size, ops) = ("fgoi6eGXPp9PkN313nsJ3vaf", 8, map opStringToOp ["shr1","shr4","tfold"])
+-}
+
   let size = 8
 
   -- (1) First, get the raw training problem. There are different ways of doing that.
