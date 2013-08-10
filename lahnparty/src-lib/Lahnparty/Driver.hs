@@ -395,9 +395,9 @@ opStringToOp "plus" = OpOp2 Plus
 
 -- Copy-n-pasted top-level structure from Showtime.hs
 
-rangeSizeStart = 8
-rangeSizeEnd = 13
-nProblemsForSize = 2
+rangeSizeStart = 14
+rangeSizeEnd = 15
+nProblemsForSize = 3
 
 main = solveTrainProblemsOfSizeFromTo findP rangeSizeStart rangeSizeEnd
 
