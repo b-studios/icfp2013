@@ -28,21 +28,27 @@ data Response a =
 
 -- ** Submitting Evaluation Requests
 
+data EvalResponse = 
+    EvalResponseOK (Maybe [Word64]) [Word64]
+  | EvalResponseError String
+  deriving (Eq,Show)
+
 -- | Send an evaluation request.
 --   Note that there are two kinds of eval requests:
 --     1. request the results of solution for up to 256 arguments
 --     2. compute the results of a program for up to 256 arguments
 --   We implement only the first since we can compute the second on our own.
 evalRequest :: ProblemID -> [Word64] -> IO (Response EvalResponse)
-evalRequest id vs = performRequest "eval" (EvalRequest id vs)
-
-data EvalResponse = 
-    EvalResponseOK [Word64]
-  | EvalResponseError String
-  deriving (Eq,Show)
+evalRequest pid vs = performRequest "eval" (EvalRequest Nothing pid vs)
 
 
 -- ** Submitting Guesses
+
+data GuessResponse =
+    GuessResponseWin
+  | GuessResponseMismatch [Word64]
+  | GuessResponseError String
+  deriving (Eq,Show)
 
 -- | Send a guess request.
 guessRequest :: ProblemID -> P -> IO (Response GuessResponse)
@@ -52,16 +58,14 @@ guessRequest id = guessRequestString id . prettyP
 guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)
 guessRequestString id s = performRequest "guess" (Guess id s)
 
-data GuessResponse =
-    GuessResponseWin
-  | GuessResponseMismatch [Word64]
-  | GuessResponseError String
-  deriving (Eq,Show)
-
 
 -- ** Submitting a Training Request
 
 data TrainOps = TrainNone | TrainFold | TrainTFold
+  deriving (Eq,Show)
+
+-- TODO: Parse program string and op lists?
+data TrainingProblem = TrainingProblem String ProblemID Int [String]
   deriving (Eq,Show)
 
 -- | Send a request for an arbitrary training problem.
@@ -69,21 +73,32 @@ trainRequest :: IO (Response TrainingProblem)
 trainRequest = performRequest "train" (TrainRequest Nothing Nothing)
 
 -- | Send a request for a training problem of a specified size.
-trainRequestSize :: Int -> IO (Response TrainingProblem)
+trainRequestSize :: Size -> IO (Response TrainingProblem)
 trainRequestSize n = performRequest "train" (TrainRequest (Just n) Nothing)
 
 -- | Send a request for a training problem of a specified size
 --   with specified ops.
-trainRequestSizeOps :: Int -> TrainOps -> IO (Response TrainingProblem)
+trainRequestSizeOps :: Size -> TrainOps -> IO (Response TrainingProblem)
 trainRequestSizeOps n fold =
     performRequest "train" (TrainRequest (Just n) (Just ops))
   where ops = case fold of TrainNone  -> []
                            TrainFold  -> ["fold"]
                            TrainTFold -> ["tfold"]
 
--- TODO: Parse program string and op lists?
-data TrainingProblem = TrainingProblem String ProblemID Int [String]
+
+-- ** Interface to Distributed Solver
+
+-- | Description of a subset of a problem to work on.
+data DistProblem = DistProblem ProblemID [[String]]
   deriving (Eq,Show)
+
+-- | Register as a worker.
+registerWorker :: WorkerID -> IO (Response DistProblem)
+registerWorker = performRequest "register" . RegisterRequest
+
+-- | Send an evaluation request as a distributed worker.
+distEvalRequest :: WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
+distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid vs)
 
 
 --
@@ -114,7 +129,7 @@ toHex w = "0x" ++ showHex w ""
 
 -- ** JSON Support Code
 
-data EvalRequest = EvalRequest ProblemID [Word64]
+data EvalRequest = EvalRequest (Maybe WorkerID) ProblemID [Word64]
   deriving (Eq,Show)
 
 instance JSON EvalRequest where
@@ -122,34 +137,37 @@ instance JSON EvalRequest where
   readJSON (JSObject o) = do
       id   <- lookupReq m "id"
       args <- lookupReq m "arguments" >>= return . map read
-      return (EvalRequest id args)
+      wid  <- lookupOpt m "workerID"
+      return (EvalRequest wid id args)
     where m = fromJSObject o
   readJSON _ = Error "Error reading EvalRequest (not JSObject)."
 
-  showJSON (EvalRequest id args) =
-      JSObject $ toJSObject [
+  showJSON (EvalRequest wid id args) =
+      JSObject $ toJSObject $ [
         ("id", showJSON id),
         ("arguments", showJSON (map toHex args))
-      ]
+      ] ++ optField "workerID" wid
     
+
 instance JSON EvalResponse where
   
   readJSON (JSObject o) = do
       status <- lookupReq m "status"
       if status == "ok" then do
-        outs <- lookupReq m "outputs" >>= return . map read
-        return (EvalResponseOK outs)
+        outs <- lookupReq m "outputs"   >>= return . map read
+        args <- lookupOpt m "arguments" >>= return . fmap (map read)
+        return (EvalResponseOK args outs)
       else do
         msg <- lookupReq m "message"
         return (EvalResponseError msg)
     where m = fromJSObject o
   readJSON _ = Error "Error reading EvalResponse (not JSObject)."
 
-  showJSON (EvalResponseOK outs) =
-    JSObject $ toJSObject [
+  showJSON (EvalResponseOK args outs) =
+    JSObject $ toJSObject $ [
       ("status", showJSON "ok"),
       ("outputs", showJSON (map toHex outs))
-    ]
+    ] ++ optField "arguments" args
   showJSON (EvalResponseError msg) =
     JSObject $ toJSObject [
       ("status", showJSON "error"),
@@ -174,6 +192,7 @@ instance JSON Guess where
         ("id", showJSON id),
         ("program", showJSON prog)
       ]
+
 
 instance JSON GuessResponse where
   
@@ -206,7 +225,7 @@ instance JSON GuessResponse where
     ]
 
 
-data TrainRequest = TrainRequest (Maybe Int) (Maybe [String])
+data TrainRequest = TrainRequest (Maybe Size) (Maybe [String])
   deriving (Eq,Show)
 
 instance JSON TrainRequest where
@@ -220,6 +239,7 @@ instance JSON TrainRequest where
   
   showJSON (TrainRequest n ops) =
       JSObject $ toJSObject (optField "size" n ++ optField "operators" ops)
+
 
 instance JSON TrainingProblem where
   
@@ -240,6 +260,37 @@ instance JSON TrainingProblem where
       ("operators", showJSON ops)
     ]
 
+
+data RegisterRequest = RegisterRequest WorkerID
+  deriving (Eq,Show)
+
+instance JSON RegisterRequest where
+  
+  readJSON (JSObject o) = do
+      wid <- lookupReq m "workerID"
+      return (RegisterRequest wid)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading RegisterRequest (not JSObject)."
+  
+  showJSON (RegisterRequest wid) =
+      JSObject $ toJSObject [("workerID", showJSON wid)]
+
+
+instance JSON DistProblem where
+  
+  readJSON (JSObject o) = do
+      pid <- lookupReq m "id"
+      ops <- lookupReq m "operators"
+      return (DistProblem pid ops)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading DistProblem (not JSObject)."
+
+  showJSON (DistProblem pid ops) =
+      JSObject $ toJSObject [
+        ("id", showJSON pid),
+        ("operators", showJSON ops)
+      ]
+  
 
 -- ** HTTP Support Code
 
@@ -263,11 +314,9 @@ performRequest path request = do
 
 -- ** Test Code
 
-demoEvalRequest1 = EvalRequest "cVBdX88Lz74jTfLTSj2YseZW" [1..256]
-demoEvalRequest2 = EvalRequest "MFrVnSUaIMxUZ38ZDqBzwkwz" [1..256]
-
-demoGuess1 = Guess "cVBdX88Lz74jTfLTSj2YseZW" "(lambda (x_1) x_1)"
-
+-- demoEvalRequest1 = EvalRequest "cVBdX88Lz74jTfLTSj2YseZW" [1..256]
+-- demoEvalRequest2 = EvalRequest "MFrVnSUaIMxUZ38ZDqBzwkwz" [1..256]
+-- demoGuess1 = Guess "cVBdX88Lz74jTfLTSj2YseZW" "(lambda (x_1) x_1)"
 
 {-
 

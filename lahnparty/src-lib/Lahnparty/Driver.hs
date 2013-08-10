@@ -59,8 +59,9 @@ driver gen probId size ops = do
 
     case result of
 
-      OK (EvalResponseOK outputs) -> do
-        let programsFilt = filterProgs programs inputs outputs
+      OK (EvalResponseOK newIns outputs) -> do
+        let inputs' = maybe inputs id newIns
+        let programsFilt = filterProgs programs inputs' outputs
         when expensiveDebug $ do
            putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
            putStrLn $ "First 10 generated programs after filtering:"
