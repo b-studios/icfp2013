@@ -3,6 +3,10 @@ module Lahnparty.Language where
 import Data.Bits
 import Data.Word (Word64)
 
+import qualified Data.List as Vec (map, zipWith, zipWith3, transpose)
+
+type Vec = [Word64]
+
 data Id =
   -- | The overall input (bound by the top-level lambda).
   Input
@@ -67,7 +71,8 @@ evalP input (Lambda e) =
 -- | Evaluate programs on multiple inputs.
 
 multiEvalP :: [Word64] -> P -> [Word64]
-multiEvalP inputs p = [evalP input p | input <- inputs]
+multiEvalP inputs (Lambda e) =
+  multiEvalE inputs (error "not in fold") (error "not in fold") e
 
 -- | Evaluate expressions.
 
@@ -90,6 +95,29 @@ evalE input byte acc (Op1 op1 e1) =
   evalOp1 op1 (evalE input byte acc e1)
 evalE input byte acc (Op2 op2 e1 e2) =
   evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
+
+-- | Evaluate expressions on multiple inputs.
+
+multiEvalE :: Vec -> Vec -> Vec -> E -> Vec
+multiEvalE input byte acc Zero = Vec.map (const 0) input
+multiEvalE input byte acc One = Vec.map (const 1) input
+multiEvalE input byte acc (Id Input) = input
+multiEvalE input byte acc (Id Byte) = byte
+multiEvalE input byte acc (Id Acc) = acc
+multiEvalE input byte acc (If0 e1 e2 e3) =
+  Vec.zipWith3 (\v1 v2 v3 -> if v1 == 0 then v2 else v3)
+    (multiEvalE input byte acc e1)
+    (multiEvalE input byte acc e2)
+    (multiEvalE input byte acc e3)
+multiEvalE input byte acc (Fold e0 e1 e2) = foldr f initial values
+  where
+    values = Vec.transpose $ Vec.map listOfFoldedValues (multiEvalE input byte acc e0)
+    initial = multiEvalE input byte acc e1
+    f x y = multiEvalE input x y e2
+multiEvalE input byte acc (Op1 op1 e1) =
+  Vec.map (evalOp1 op1) (multiEvalE input byte acc e1)
+multiEvalE input byte acc (Op2 op2 e1 e2) =
+  Vec.zipWith (evalOp2 op2) (multiEvalE input byte acc e1) (multiEvalE input byte acc e2)
 
 evalOp1 :: Op1 -> Word64 -> Word64
 evalOp1 Not = complement
