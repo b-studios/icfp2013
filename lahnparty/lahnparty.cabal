@@ -28,9 +28,15 @@ library
 
   build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, mtl, containers
 
-executable lahnparty-solver
+executable lahnparty-solver-real
   hs-source-dirs:      src-exec
-  main-is:             interpreter.hs
+  main-is:             solver.hs
+  build-depends:       lahnparty,
+                       base >= 4.5
+
+executable lahnparty-train
+  hs-source-dirs:      src-exec
+  main-is:             train.hs
   build-depends:       lahnparty,
                        base >= 4.5
 
