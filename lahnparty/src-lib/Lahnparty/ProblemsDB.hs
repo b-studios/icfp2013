@@ -3,8 +3,38 @@ module Lahnparty.ProblemsDB where
 import Lahnparty.Language
 import Lahnparty.Types
 
+--
+-- * Predicates for filtering database.
+--
 
-sizeToIDs :: Int -> [String]
+-- | Get the size of a problem.
+problemSize :: ProblemID -> Size
+problemSize = fst . fetchData
+
+-- | Get the list of operators for a problem.
+problemOps :: ProblemID -> [Op]
+problemOps = snd . fetchData
+
+-- | Has a top-level fold.
+hasTFold :: ProblemID -> Bool
+hasTFold = elem OpTFold . problemOps
+
+-- | Has a fold that is not explicitly a top-level fold.
+hasNestedFold :: ProblemID -> Bool
+hasNestedFold = elem OpFold . problemOps
+
+-- | Has any kind of fold.
+hasFold :: ProblemID -> Bool
+hasFold pid = hasNestedFold pid || hasTFold pid
+
+-- | Does not have any kind of fold.
+hasNoFold :: ProblemID -> Bool
+hasNoFold = not . hasFold
+
+
+-- * Database
+
+sizeToIDs :: Int -> [ProblemID]
 
 sizeToIDs 3 = ["1A6HFA3RwfOdnpnuOOeDw65I", "Bk7qIyPGAWRILKywHfZdQmld", "EJLKxOSo3agEpAsbZRrwMvJh", "EoRhzDSC9RJ8gjXuNPTz7B1v", "FCX1FjEdiKZlbnyaxRVaZQIq", "HHZ5jRgzoZ9XL4tgZ7KGq371", "IaUDwBTYwD3RQ0bBGagS3Vwq", "Iz8Oufhryl8A04A0Tgrco7ZW", "JIypCt4W3BBb9m09WgjBsMZ9", "K2rLrGimomWkcPBTUluDytd6", "YsHSz9RWKbB3liFlf5YA027M", "Zdts0Txsut0ReI9BB1IYlnzz", "i9RhdHBzMnxoRU1BPQ5Sm1vX", "iPS1nEHmtF2w3wh4OPaYNijV", "mI0cSufYilUIvmdSKmB4hDMe", "mcHZAlQCsue41ZBTvaB4aSTX", "oOIYXnkNkCmolB3cdoTAJvCe", "t6Mg9Sbbyf7nWLXBZ3G9Qt48", "tSPtukYJgeliQcEZk9LlSK72", "xmy17S91jU9mdMdMbKrngAdp"]
 sizeToIDs 4 = ["AWwOfA3ggktqNfsoACDBeJaM", "B0j699Uk1BoLq4yQGd1SM4VV", "H3n3fgdedRJcyEGIiwVwAcjB", "MCKaSQOUv7SgIGugD8RuXUZM", "NSmebgyfUqBudL3ToryVx9YA", "S0pNSR92NuQsdK1NExtAoxAH", "UvX42OWfBxZ3Kbiaq15Q2Weg", "VdXAKB64w5jwqOE3avLznoqI", "ZH4m6Ln2CYM0yELF7LsXrCKi", "bwnOAjjPBQfZUp0a00BLeWnM", "dB7SQRpARiXWv8JcmnRg0hJc", "jH1ORiAYIgrXG28jpvhheUSt", "jUKUx2MLmj2NxvRPhTAJOxw0", "nFKTiIXcD5DhcD5akhWI9Mw5", "nrMBlMBszzWvfxXcu0QY7UoQ", "uiZnibiGeIoDlC8QqTnp9dSV", "vMjAPI4ITqIQ4HEYXVurp5Xn", "woO5EVoBgaMSmdgClP4E8vFp", "xzfjrzCMv3plvciAazBKTiAC", "zBZPfLjssx3NWqcRoyFIWtl3"]
