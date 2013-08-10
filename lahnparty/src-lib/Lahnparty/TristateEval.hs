@@ -7,8 +7,15 @@ import Numeric
 import Lahnparty.Language
 
 -- Unbox/unpack this record.
-data TristateWord = T { bits :: Word64, bitMask :: Word64 }
+data TristateWord = T {-# UNPACK #-} !Word64
+                      {-# UNPACK #-} !Word64
   deriving (Eq, Show)
+
+bits :: TristateWord -> Word64
+bits (T b _) = b
+
+bitMask :: TristateWord -> Word64
+bitMask (T _ m) = m
 
 normalizeTristate (T bits mask) = T (bits .&. mask) mask
 
