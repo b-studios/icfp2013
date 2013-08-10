@@ -52,6 +52,8 @@ driver gen probId size ops = do
     mapM_ print $ take 10 programs
 
     let inputs = randomInputs programs
+
+    putStrLn "Sending eval request:"
     result <- evalRequest probId inputs
 
     case result of
