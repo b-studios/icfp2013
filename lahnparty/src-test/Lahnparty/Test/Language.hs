@@ -8,6 +8,8 @@ import Numeric
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit (assertEqual)
+import Test.QuickCheck
+import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 import Lahnparty.Language
 
