@@ -422,24 +422,24 @@ rangeSizeStart = 14
 rangeSizeEnd = 15
 nProblemsForSize = 3
 
-main = solveTrainProblemsOfSizeFromTo findP rangeSizeStart rangeSizeEnd
+main = solveTrainProblemsOfSizeFromTo findP TrainNone rangeSizeStart rangeSizeEnd
 
-solveTrainProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
-solveTrainProblemsOfSizeFromTo g from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize) [from .. to]
+solveTrainProblemsOfSizeFromTo :: Generator -> TrainOps -> Int -> Int -> IO ()
+solveTrainProblemsOfSizeFromTo g ops from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize ops) [from .. to]
 
-solveTrainProblemsOfSize :: Generator -> Int -> Size -> IO ()
-solveTrainProblemsOfSize g nProbs size =
-  mapM_ (const $ solveATrainProblemOfSize g size) [ 1 .. nProbs ]
+solveTrainProblemsOfSize :: Generator -> Int -> TrainOps -> Size -> IO ()
+solveTrainProblemsOfSize g nProbs ops size =
+  sequence_ (replicate nProbs (solveATrainProblemOfSize g ops size))
 
-solveATrainProblemOfSize :: Generator -> Size -> IO ()
-solveATrainProblemOfSize g size = do
+solveATrainProblemOfSize :: Generator -> TrainOps -> Size -> IO ()
+solveATrainProblemOfSize g ops size = do
   -- (1) First, get the raw training problem. There are different ways of doing that.
 
   -- (a) get a training program of the given size
   -- req <- trainRequestSize size
 
   -- (b) get a training program of the given size and specified ops
-  resp <- fetchTrainingData size TrainNone
+  resp <- fetchTrainingData size ops
 
   -- (c) Alternatively, to test again on some training program, modify with the response, as output by the program. Example:
   -- let resp = OK (TrainingProblem "(lambda (x_2797) (fold x_2797 0 (lambda (x_2797 x_2798) (xor x_2797 1))))" "Wa5vCJ1BYV6Hz3fv0XbKoVQs" 8 ["tfold","xor"])
