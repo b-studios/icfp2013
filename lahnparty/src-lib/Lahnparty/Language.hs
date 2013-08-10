@@ -62,14 +62,17 @@ sizeE (Op2 _ e1 e2) = 1 + sizeE e1 + sizeE e2
 -- | Evaluate programs.
 
 evalP :: Word64 -> P -> Word64
-evalP input (Lambda e) =
-  evalE input (error "not in fold") (error "not in fold") e
+evalP = evalPGen
 
 -- | Evaluate expressions.
 
 -- Specialized version, with current interface.
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
 evalE = evalEGen
+
+evalPGen :: ProgData t => t -> P -> t
+evalPGen input (Lambda e) =
+  evalEGen input (error "not in fold") (error "not in fold") e
 
 -- General version, soon with polymorphic interface.
 evalEGen :: ProgData t => t -> t -> t -> E -> t
