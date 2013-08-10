@@ -45,11 +45,12 @@ driver gen probId size ops = do
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
     
     let programs = gen size ops
-    when expensiveDebug $
-       putStrLn $ "# generated programs: " ++ show (length programs)
+    when expensiveDebug $ do
+      putStrLn $ "# generated programs: " ++ show (length programs)
 
-    putStrLn $ "First 10 generated programs:"
-    mapM_ print $ take 10 programs
+      putStrLn $ "First 10 generated programs:"
+
+      mapM_ print $ take 10 programs
 
     let inputs = randomInputs programs
 
@@ -98,7 +99,8 @@ getMoreInfo pid (p:ps) = do
       OK (GuessResponseMismatch words) -> do
         putStrLn "Guess mismatch, filtering ..."
         let programsFilt = filterProgs ps [words !! 0] [words !! 1]
-        putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
+        when expensiveDebug $ do
+          putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
         getMoreInfo pid programsFilt
 
       HTTPError (4,2,9) _ -> do
