@@ -70,6 +70,7 @@ findE 2 _   _      True = []
 -- *all* results will contain fold. However, if 2 < n < 5, we return no results
 -- if mustfold is true. This behavior is inconsistent with the description, so
 -- one of the two should be fixed (not sure which).
+-- XXX TH: no, everything is fine, mustfold is handled through pattern match
 findE 2 ops infold _    = let ops1 = map (\(OpOp1 op) -> Op1 op) $ filter isOp1 ops 
                           in concat $ zipWith (map) ops1 (repeat (findE 1 undefined infold False))
 findE n ops infold mustfold = if (n<5 && mustfold) 
