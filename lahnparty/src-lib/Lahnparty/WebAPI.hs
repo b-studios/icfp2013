@@ -89,8 +89,11 @@ trainRequestSizeOps n fold =
 -- ** Interface to Distributed Solver
 
 -- | Description of a subset of a problem to work on.
-data DistProblem = DistProblem ProblemID [[String]]
+data DistProblem = DistProblem ProblemID Int Int
   deriving (Eq,Show)
+
+-- | Description of a subset of a problem to work on.
+data DistTrainingProblem = DistTrainingProblem TrainingProblem Int Int
 
 -- | Register as a worker.
 registerWorker :: WorkerID -> IO (Response DistProblem)
@@ -99,6 +102,15 @@ registerWorker = performRequest "register" . RegisterRequest
 -- | Send an evaluation request as a distributed worker.
 distEvalRequest :: WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
 distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid vs)
+
+-- | Send a training request as a distributed worker.
+distTrainRequest :: WorkerID -> Size -> TrainOps -> IO (Response DistTrainingProblem)
+distTrainRequest wid n fold =
+    performRequest "train" (TrainRequest (Just n) (Just ops))
+  where ops = case fold of TrainNone  -> []
+                           TrainFold  -> ["fold"]
+                           TrainTFold -> ["tfold"]
+
 
 
 --
@@ -279,17 +291,38 @@ instance JSON RegisterRequest where
 instance JSON DistProblem where
   
   readJSON (JSObject o) = do
-      pid <- lookupReq m "id"
-      ops <- lookupReq m "operators"
-      return (DistProblem pid ops)
+      pid  <- lookupReq m "id"
+      wnum <- lookupReq m "workerNum"
+      wtot <- lookupReq m "totalWorkers"
+      return (DistProblem pid wnum wtot)
     where m = fromJSObject o
   readJSON _ = Error "Error reading DistProblem (not JSObject)."
 
-  showJSON (DistProblem pid ops) =
+  showJSON (DistProblem pid wnum wtot) =
       JSObject $ toJSObject [
         ("id", showJSON pid),
-        ("operators", showJSON ops)
+        ("workerNumber", showJSON wnum),
+        ("totalWorkers", showJSON wtot)
       ]
+
+
+instance JSON DistTrainingProblem where
+  
+  readJSON (JSObject o) = do
+      prob <- readJSON (JSObject o)
+      wnum <- lookupReq m "workerNum"
+      wtot <- lookupReq m "totalWorkers"
+      return (DistTrainingProblem prob wnum wtot)
+    where m = fromJSObject o
+  readJSON _ = Error "Error reading DistTrainingProblem (not JSObject)."
+
+  showJSON (DistTrainingProblem prob wnum wtot) =
+      JSObject $ toJSObject $
+      fromJSObject probObj ++ [
+        ("workerNumber", showJSON wnum),
+        ("totalWorkers", showJSON wtot)
+      ]
+    where (JSObject probObj) = showJSON prob
   
 
 -- ** HTTP Support Code
