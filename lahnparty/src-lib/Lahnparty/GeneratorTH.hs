@@ -24,6 +24,10 @@ isOp3 OpIf0 = True
 isOp3 OpFold = True
 isOp3 _ = False
 
+isShift :: Op1 -> Bool
+isShift Not = False
+isShift _ = True
+
 arity :: Op -> Int
 arity (OpOp1 _) = 1
 arity (OpOp2 _) = 2
@@ -58,6 +62,7 @@ findP size ops =
 genOp1 ops n infold mustfold op1 =
   [ Op1 op1 e0
   | e0 <- findE (n-1) ops infold mustfold
+  , not (isShift op1 && e0 == Zero) -- shifts on Zero always have smaller equivalents. PG
   ]
 
 newtype SizedE = SizedE E
