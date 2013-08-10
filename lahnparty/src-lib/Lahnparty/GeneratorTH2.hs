@@ -21,6 +21,7 @@ type MustFold = Bool
 data KnownPoint = Know {-# UNPACK #-} !Mask 
                        {-# UNPACK #-} !Argument 
                        {-# UnPACK #-} !Result
+  deriving (Eq,Show)
 
 type Knowledge = V.Vector KnownPoint
 
@@ -28,6 +29,9 @@ know :: Argument -> Result -> KnownPoint
 know = Know (0xFFFFFFFFFFFFFFFF)
 
 emptyKnowledge = V.empty
+
+buildKnowledge :: [Word64] -> [Word64] -> Knowledge
+buildKnowledge arg res = V.fromList (zipWith know arg res)
 
 isValid :: Knowledge -> Op -> Bool
 isValid k (OpOp1 Shl1)  = check k 0 1
@@ -111,9 +115,9 @@ generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
 
 
-type SmartGenerator = Size -> [Op] -> Knowledge -> [P]
+type Generator = Size -> [Op] -> Knowledge -> [P]
 
-findP :: SmartGenerator
+findP :: Generator
 findP size ops known =
   if OpTFold `elem` ops
    then

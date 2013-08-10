@@ -6,6 +6,8 @@ import Data.List(delete)
 import Data.Word (Word64)
 import Debug.Trace
 
+import Lahnparty.GeneratorTH2 (Generator)
+
 type Argument = Word64
 type Result = Word64
 type InFold = Bool
@@ -43,10 +45,8 @@ generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
 
 
-type Generator = Size -> [Op] -> [P]
-
 findP :: Generator
-findP size ops =
+findP size ops _ =
   if OpTFold `elem` ops
    then
      -- assertFalse (OpFold `elem` ops)

@@ -8,7 +8,8 @@ import System.Exit (exitFailure)
 
 import Lahnparty.Language
 import Lahnparty.WebAPI
-import Lahnparty.GeneratorTH
+import qualified Lahnparty.GeneratorTH  as GTH1
+import Lahnparty.GeneratorTH2
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
 
@@ -39,6 +40,12 @@ failOnTimeout err pid = do
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
   threadDelay 5000000 -- 5 seconds
+    
+debugShowPrograms s programs =
+  when expensiveDebug $ do
+    putStrLn $ "# generated programs " ++ s ++ ": " ++ show (length programs)
+    putStrLn $ "First 10 generated programs:"
+    mapM_ print $ take 10 programs
 
 type EvalRequester = ProblemID -> [Word64] -> IO (Response EvalResponse)
 
@@ -53,15 +60,7 @@ genericDriver eval gen probId size ops = do
     
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
     
-    let programs = gen size ops
-    when expensiveDebug $ do
-      putStrLn $ "# generated programs: " ++ show (length programs)
-
-      putStrLn $ "First 10 generated programs:"
-
-      mapM_ print $ take 10 programs
-
-    let inputs = randomInputs programs
+    let inputs = randomInputs
 
     putStrLn "Sending eval request:"
     result <- eval probId inputs
@@ -69,12 +68,14 @@ genericDriver eval gen probId size ops = do
     case result of
 
       OK (EvalResponseOK newIns outputs) -> do
+        
         let inputs' = maybe inputs id newIns
+        let knowledge = buildKnowledge inputs' outputs
+        
+        let programs = gen size ops knowledge
+        debugShowPrograms "before filtering" programs
         let programsFilt = filterProgs programs inputs' outputs
-        when expensiveDebug $ do
-           putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
-           putStrLn $ "First 10 generated programs after filtering:"
-           mapM_ print $ take 10 programsFilt
+        debugShowPrograms "after filtering" programsFilt
 
         getMoreInfo probId programsFilt
 
@@ -136,10 +137,10 @@ filterProgs programs inputs outputs =
   ]
     -- XXX speed this evaluation by SIMD evaluation (?)
 
-randomInputs2 programs = [0 .. 255]
+randomInputs2 = [0 .. 255]
 
 -- Jona's inputs
-randomInputs programs =
+randomInputs =
   [ 0x1000000000000000
   , 0x0000000000000001
   , 0x0000000000000010
@@ -433,7 +434,7 @@ rangeSizeStart = 16
 rangeSizeEnd = 20
 nProblemsForSize = 3
 
-main = solveTrainProblemsOfSizeFromTo findP TrainNone rangeSizeStart rangeSizeEnd
+main = solveTrainProblemsOfSizeFromTo GTH1.findP TrainNone rangeSizeStart rangeSizeEnd
 
 solveTrainProblemsOfSizeFromTo :: Generator -> TrainOps -> Int -> Int -> IO ()
 solveTrainProblemsOfSizeFromTo g ops from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize ops) [from .. to]
@@ -461,7 +462,7 @@ solveATrainProblemOfSize g ops size = do
   let (probId, size, ops) = parseTrainingData resp
 
   -- (3) Finally, try to solve the problem
-  driver findP probId size ops
+  driver GTH1.findP probId size ops
 
 solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
 solveDistTrainingProblem g wid ops size = do
@@ -473,5 +474,5 @@ solveDistTrainingProblem g wid ops size = do
         putStrLn $ "Worker Number: " ++ show wnum
         putStrLn $ "Total Workers: " ++ show wtot
         let (pid,size,ops) = parseTrainingData (OK prob)
-        distDriver wid findP pid size ops
+        distDriver wid GTH1.findP pid size ops
       _ -> error "Boom."
