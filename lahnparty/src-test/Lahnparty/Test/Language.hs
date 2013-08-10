@@ -1,14 +1,17 @@
 {-# LANGUAGE ParallelListComp #-}
 module Lahnparty.Test.Language where
 
+import Control.Applicative
+
 import Data.Word (Word64)
+import Data.Bits
 
 import Numeric
 
 import Test.Framework
 import Test.Framework.Providers.HUnit
 import Test.HUnit (assertEqual)
-import Test.QuickCheck
+import Test.QuickCheck hiding ((.&.))
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 import Lahnparty.Language
@@ -5320,12 +5323,16 @@ evalTests =
 tristateTests = 
   [ testProperty "unary operations on defined values" propDefined1
   , testProperty "binary operations on defined values" propDefined2
+  , testProperty "plus completeness" testPlus
+  , testProperty "conservativeness" testSoundness
   ]
 
 instance Arbitrary Op1 where
   arbitrary = elements [ minBound .. maxBound ]
 instance Arbitrary Op2 where
   arbitrary = elements [ minBound .. maxBound ]
+instance Arbitrary TristateWord where
+  arbitrary = T <$> arbitrary <*> arbitrary
 
 -- tristateConst forms a commutative diagram with (evalOp1 op1)
 propDefined1 op1 inp1 =
@@ -5339,5 +5346,28 @@ propDefined2 op2 inp1 inp2 =
   where
     types = (inp1 :: Word64, inp2 :: Word64)
 
--- TODO: test truth tables
 -- test that evaluation is conservative
+testSoundness op2 inp1 inp2 rand1 rand2 =
+  compatible
+    (evalOp2 op2 (completeTristate inp1 rand1) (completeTristate inp2 rand2))
+    (normalizeTristate (evalOp2 op2 inp1 inp2))
+  where
+    types = (inp1 :: TristateWord, inp2 :: TristateWord)
+
+compatible val (T bits mask) = val .&. mask == bits
+completeTristate (T bits mask) randBits = bits .&. mask .|. randBits .&. complement mask
+
+testPlus nBits randomMask1 randomMask2 inp1 inp2 =
+  tristateConst (filtInp1 + filtInp2) == normalizeTristate (evalOp2 Plus (T inp1 mask1) (T inp2 mask2))
+  where
+    nthBit = (1 `shiftL` nBits)
+    baseMask = nthBit - 1
+    filtInp1 = inp1 .&. baseMask
+    filtInp2 = inp2 .&. baseMask
+    mask1 = baseMask .|. (randomMask1 .&. complement nthBit)
+    mask2 = baseMask .|. (randomMask2 .&. complement nthBit)
+
+    types = (nBits :: Int, randomMask1 :: Word64, randomMask2 :: Word64, inp1 :: Word64, inp2 :: Word64)
+
+
+-- TODO: test truth tables
