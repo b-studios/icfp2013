@@ -115,6 +115,12 @@ instance ProgData Word64 where
   evalOp2 Xor = xor
   evalOp2 Plus = (+)
 
+shiftAmount Shl1 = -1
+shiftAmount Shr1  = 1
+shiftAmount Shr4  = 4
+shiftAmount Shr16 = 16
+shiftAmount Not = error "shiftAmount Not"
+
 listOfFoldedValues :: Word64 -> [Word64]
 listOfFoldedValues =
   take 8 . map (`shiftR` 56) . iterate (`shiftL` 8)
