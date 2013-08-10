@@ -84,7 +84,7 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                       -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
 
                         then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
-                                                 e0 <- findE i       ops  infold True,
+                                                 e0 <- findE i       ops  infold True,         -- XXX don't we need e0 /= Zero, since mustfold = True currently doesn't imply we get a program with a fold?
                                                  e1 <- findE (n-1-i) ops' infold False]
                           ++ [ (Op2 op2) e0 e1 |  i <- [1..((n-1) `div` 2)],                   -- optimization: e0 <=  e1
                                                  e0 <- findE i       ops' infold False,
