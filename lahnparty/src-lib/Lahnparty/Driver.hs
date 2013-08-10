@@ -27,7 +27,7 @@ failOnTimeout :: Show t => Response t -> Maybe ProblemID -> IO ()
 failOnTimeout err pid = do
   case err of
     HTTPError (4,1,0) str -> do
-      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> "on problem ID: " ++ show i) pid
+      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
       putStrLn $ "Error message: " ++ str
       exitFailure
     _ -> do
