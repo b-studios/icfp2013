@@ -12,23 +12,26 @@ import Control.Concurrent (threadDelay)
 import Lahnparty.Driver
 import Lahnparty.GeneratorTH
 import Lahnparty.ProblemsDB
+import Lahnparty.Types
 
 -- Time to wait between problems in seconds.
 wait = 3
 
-solveProblemsOfSize :: Generator -> Int -> IO ()
-solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
+solveProblems :: Generator -> [ProblemID] -> IO ()
+solveProblems g ids = mapM_ solveProblem ids
   where
     solveProblem i = do
       let (size,ops) = fetchData i
-
       driver g i size ops
-      -- Alternative to avoid programs with folds and still score points on the other ones:
-      -- driverIf g i size ops checkOpsNoFolds
-
       threadDelay (wait * 1000000)
 
-solveProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
-solveProblemsOfSizeFromTo g from to = mapM_ (solveProblemsOfSize g) [from .. to]
+solveProblemsOfSize :: Generator -> Int -> IO ()
+solveProblemsOfSize g = solveProblems g . sizeToIDs
+      
+solveProblemsOfSizeFiltered :: Generator -> Int -> (ProblemID -> Bool) -> IO ()
+solveProblemsOfSizeFiltered g n p = solveProblems g (filter p (sizeToIDs n))
 
-main = solveProblemsOfSizeFromTo findP 8 8
+solveProblemsInRange :: Generator -> Int -> Int -> IO ()
+solveProblemsInRange g from to = mapM_ (solveProblemsOfSize g) [from .. to]
+
+main = solveProblemsOfSizeFiltered findP 8 hasNoFold

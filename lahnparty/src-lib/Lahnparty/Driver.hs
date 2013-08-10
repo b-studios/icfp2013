@@ -23,26 +23,9 @@ unexpected err probId = do
   print err
   error "Exiting defensively for a failure"
 
-checkOpsNoFold ops =
-  not (OpFold `elem` ops)
-checkOpsNoTFold ops =
-  not (OpTFold `elem` ops)
-
-checkOpsNoFolds ops =
-  checkOpsNoFold ops &&
-  checkOpsNoTFold ops
-
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
   threadDelay 5000000 -- 5 seconds
-
--- Wrapper for usage in Showtime
-driverIf gen probId size ops checkOps =
-  if (checkOps ops) then
-     driver gen probId size ops
-   else
-     putStrLn $ "Skipping program " ++ show probId
-                ++ " with size = " ++ show size ++ "and ops = " ++ show ops
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
@@ -101,9 +84,10 @@ getMoreInfo probId (p : programs) = do
     HTTPError (4,2,9) _ -> do
       waitForRateLimit429
       getMoreInfo probId (p : programs)
-
+    
     err ->
       unexpected err $ Just probId
+
 
 filterProgs programs inputs outputs =
   [ program
