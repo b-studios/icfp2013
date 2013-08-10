@@ -12,7 +12,7 @@ data Id =
 
   -- | The current accumulator (second variable bound by lambda in fold).
   | Acc
-    deriving Eq
+    deriving (Eq, Ord)
 
 data P
   = Lambda E
@@ -26,7 +26,7 @@ data E
   | Fold E E E
   | Op1 Op1 E
   | Op2 Op2 E E
-    deriving Eq
+    deriving (Eq, Ord)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
     deriving (Eq, Ord)
