@@ -17,6 +17,7 @@ unexpected err probId = do
     HTTPError (4,1,0) str ->
       do
         putStrLn $ ">>> We failed for timeout on problem ID" ++ show probId
+    _ -> return ()
 
   print err
   error "Exiting defensively for a failure"
