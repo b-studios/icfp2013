@@ -416,7 +416,7 @@ solveATrainProblemOfSize g size = do
   -- req <- trainRequestSize size
 
   -- (b) get a training program of the given size and specified ops
-  resp <- fetchTrainingData size TrainTFold
+  resp <- fetchTrainingData size TrainNone
 
   -- (c) Alternatively, to test again on some training program, modify with the response, as output by the program. Example:
   -- let resp = OK (TrainingProblem "(lambda (x_2797) (fold x_2797 0 (lambda (x_2797 x_2798) (xor x_2797 1))))" "Wa5vCJ1BYV6Hz3fv0XbKoVQs" 8 ["tfold","xor"])
