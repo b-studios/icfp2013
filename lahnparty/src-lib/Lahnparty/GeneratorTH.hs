@@ -84,7 +84,7 @@ findE 2 ops infold _    = let ops1 = map (\(OpOp1 op) -> Op1 op) $ filter isOp1 
                           in concat $ zipWith (map) ops1 (repeat (findE 1 undefined infold False))
 findE n ops infold mustfold = if (n<5 && mustfold) 
                                 then []
-                                else concat $ map gen ops
+                                else concatMap gen ops
   where
     ops' = delete OpFold ops
 
