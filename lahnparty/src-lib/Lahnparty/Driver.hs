@@ -3,7 +3,12 @@ module Lahnparty.Driver where
 import Control.Concurrent (threadDelay)
 import Control.Monad
 import System.Exit (exitFailure)
-
+import Data.Bits (rotate, complement)
+import Data.List (nub)
+import Data.Set hiding (map, filter, null)
+import Data.Word (Word64)
+import Data.Random.Source
+import Data.Random.Source.IO
 
 import Lahnparty.Language
 import Lahnparty.WebAPI
@@ -38,81 +43,6 @@ failOnTimeout err pid = do
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
   threadDelay 5000000 -- 5 seconds
-
-driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
-driver gen probId size ops = do
-    
-    putStrLn $ "== ProblemID: " ++ probId ++ " =="
-    
-    let programs = gen size ops
-    when expensiveDebug $
-       putStrLn $ "# generated programs: " ++ show (length programs)
-
-    putStrLn $ "First 10 generated programs:"
-    mapM_ print $ take 10 programs
-
-    let inputs = randomInputs programs
-
-    putStrLn "Sending eval request:"
-    result <- evalRequest probId inputs
-
-    case result of
-
-      OK (EvalResponseOK outputs) -> do
-        let programsFilt = filterProgs programs inputs outputs
-        when expensiveDebug $ do
-           putStrLn $ "# generated programs after filtering: " ++ show (length programsFilt)
-           putStrLn $ "First 10 generated programs after filtering:"
-           mapM_ print $ take 10 programsFilt
-
-        getMoreInfo probId programsFilt
-
-      HTTPError (4,2,9) _ -> do
-        waitForRateLimit429
-        driver gen probId size ops
-
-      err -> do
-        failOnTimeout err (Just probId)
-        putStrLn "Exiting defensively."
-        exitFailure
-
-    return ()
-
-getMoreInfo probId [] = do
-  putStrLn "No more possible programs"
-  return ()
-
-getMoreInfo pid (p:ps) = do
-    
-    putStrLn $ "Guessing program " ++ prettyP p
-    res <- guessRequest pid p
-    
-    case res of
-      
-      OK GuessResponseWin -> do
-        putStrLn "We won!"
-        return ()
-      OK (GuessResponseError str) -> do
-        putStrLn $ "What? GuessResponseError " ++ str
-        getMoreInfo pid ps
-      OK (GuessResponseMismatch words) -> do
-        putStrLn "Guess mismatch, filtering ..."
-        let programsFilt = filterProgs ps [words !! 0] [words !! 1]
-        putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
-        getMoreInfo pid programsFilt
-
-      HTTPError (4,2,9) _ -> do
-        waitForRateLimit429
-        tryAgain
-
-      err -> do
-        failOnTimeout err (Just pid)
-        putStrLn "Timer is still running, so trying again."
-        tryAgain
-  
-  where
-    tryAgain = getMoreInfo pid (p:ps)
-
 
 filterProgs programs inputs outputs =
   [ program
@@ -451,3 +381,167 @@ solveATrainProblemOfSize g ops size = do
 
   -- (3) Finally, try to solve the problem
   driver findP probId size ops
+
+
+-- generate-eval-guess-loop
+-- begin: stuff for new driver
+driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
+driver gen probId size ops = do
+    
+    putStrLn $ "== ProblemID: " ++ probId ++ " =="
+    let programs = gen size ops
+    when expensiveDebug $ do
+      putStrLn $ "# generated programs: " ++ show (length programs)
+      putStrLn $ "First 10 generated programs:"
+      mapM_ print $ take 10 programs
+    putStrLn "finish generating programs."
+    evalGuessLoop probId programs
+
+maxEvalInputs :: Int
+maxEvalInputs = 256
+
+evalGuessLoop :: ProblemID -> [P] -> IO ()
+evalGuessLoop problemID programs =
+  retryWithEval problemID programs empty Nothing
+
+retryWithEval :: ProblemID -> [P] ->
+  Set Word64 -> Maybe (Word64, Word64) -> IO ()
+
+retryWithEval problemID programs triedInputs mismatch
+
+  -- no more programs
+  | null programs =
+   do
+    putStrLn "No more possible programs"
+    return ()
+
+  -- some more programs
+  | otherwise =
+   let -- see if there has been a mismatch
+     (mismatchedIn, mismatchedOut) = case mismatch of
+       Nothing -> (Nothing, Nothing)
+       Just (input, output) -> (Just input, Just output)
+   in do
+      (inputs, setToAvoid) <- genInputStep mismatchedIn triedInputs
+      outputs <- evalStep problemID inputs
+      feedback <- guessStep problemID programs inputs outputs
+      case feedback of
+        Nothing -> return ()
+        Just (misIn, misOut) ->
+          retryWithEval problemID
+            (filterProgs programs [misIn] [misOut])
+            setToAvoid feedback
+
+genInputStep :: Maybe Word64 -> Set Word64 -> IO ([Word64], Set Word64)
+genInputStep mismatch setToAvoid =
+  do
+    let (preset, presetAvoided) = case mismatch of
+          Nothing ->
+            let
+              -- assume randomInputs ignores parameter
+              initialInputs = randomInputs []
+            in (initialInputs, fromList initialInputs)
+          Just mismatchedIn -> preassign mismatchedIn setToAvoid
+        remaining = maxEvalInputs - length preset
+    (randoms, randomsAvoided) <- genRandomInput remaining presetAvoided
+
+    let inputs = preset ++ randoms
+
+    return (inputs, randomsAvoided)
+
+evalStep :: ProblemID -> [Word64] -> IO [Word64]
+evalStep problemID inputs = do
+  putStrLn "Sending eval request."
+  result <- evalRequest problemID inputs
+  case result of
+    OK (EvalResponseOK outputs) ->
+      return outputs
+
+    HTTPError (4,2,9) _ -> do
+      waitForRateLimit429
+      tryAgain
+
+    err -> do
+      failOnTimeout err (Just problemID)
+      putStrLn "Exiting defensively."
+      exitFailure
+
+  where
+    tryAgain = evalStep problemID inputs
+
+guessStep :: ProblemID ->
+  [P] -> [Word64] -> [Word64] -> IO (Maybe (Word64, Word64))
+guessStep problemID programs inputs outputs =
+  do
+    let programsFilt = filterProgs programs inputs outputs
+    when expensiveDebug $ do
+      putStrLn $ "# generated programs after filtering: " ++
+        show (length programsFilt)
+    putStrLn $ "First 10 generated programs after filtering:"
+    mapM_ print $ take 10 programsFilt
+    if null programsFilt
+      then do
+        putStrLn "Gone through the list and found nothing!"
+        return Nothing
+      else do
+        result <- guessRequest problemID (head programsFilt)
+        case result of
+          OK GuessResponseWin -> do
+            putStrLn "We won!"
+            return Nothing
+          OK (GuessResponseError str) -> do
+            putStrLn $ "What? GuessResponseError " ++ str
+            return Nothing
+          OK (GuessResponseMismatch words) -> do
+            putStrLn "Guess mismatch."
+            return $ Just (words !! 0, words !! 1)
+
+          HTTPError (4,2,9) _ -> do
+            waitForRateLimit429
+            tryAgain
+
+          err -> do
+            failOnTimeout err (Just problemID)
+            putStrLn "Timer is still running, so trying again."
+            tryAgain
+  where
+    tryAgain = guessStep problemID programs inputs outputs
+
+getNewInputs :: Word64 -> Set Word64 -> IO ([Word64], Set Word64)
+getNewInputs mismatchIn setToAvoid =
+  do
+    let (preset, presetAvoided) = preassign mismatchIn setToAvoid
+        remaining = maxEvalInputs - length preset
+    (randoms, randomsAvoided) <- genRandomInput remaining presetAvoided
+    return (preset ++ randoms, randomsAvoided)
+
+-- when a counter example is given, we test it against
+-- all rotations of the counter example's input except
+-- those tested already.
+preassign :: Word64 -> Set Word64 -> ([Word64], Set Word64)
+preassign mismatchIn setToAvoid =
+  let
+    preset = filter (\ x -> not (member x setToAvoid)) $ nub $
+      complement mismatchIn :
+      map (rotate mismatchIn) [1..63]
+  in
+    (preset, union (fromList preset) setToAvoid)
+
+-- input: number of Word64 to generate, the set to avoid
+-- output: list of generated words, new set to avoid
+genRandomInput :: Int -> Set Word64 -> IO ([Word64], Set Word64)
+genRandomInput n setToAvoid = do loop n setToAvoid [] where
+  loop :: Int -> Set Word64 -> [Word64] -> IO ([Word64], Set Word64)
+  loop n setToAvoid accumulator
+    | n <= 0 = return (accumulator, setToAvoid)
+    | otherwise = do
+      x <- getNext
+      return (x : accumulator, insert x setToAvoid)
+      where
+      getNext :: IO Word64
+      getNext = do
+        x <- getRandomWord64
+        if member x setToAvoid
+          then getNext
+          else return x
+-- end: stuff for new driver
