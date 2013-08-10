@@ -24,9 +24,10 @@ library
                        Lahnparty.ProblemsDB,
                        Lahnparty.Driver,
                        Lahnparty.Showtime,
+                       Lahnparty.Retry,
                        Lahnparty.Types
 
-  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, mtl, containers
+  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers
 
 executable lahnparty-solver-real
   hs-source-dirs:      src-exec
