@@ -1,6 +1,7 @@
 module Lahnparty.GeneratorTH2 where
 
 import Lahnparty.Language
+import Lahnparty.TristateEval
 import Lahnparty.Types
 import Data.Bits
 import Data.List(delete)
@@ -45,9 +46,11 @@ check k r m = V.all p k
   where
     p (Know mask _ res) = mask .&. m .&. res == mask .&. m .&. r
 
+allBits = 0xFFFFFFFFFFFFFFFF
+
 isValidConst :: Knowledge -> E -> Bool
-isValidConst k Zero       = check k 0 0xFFFFFFFFFFFFFFFF
-isValidConst k One        = check k 1 0xFFFFFFFFFFFFFFFF
+isValidConst k Zero       = check k 0 allBits
+isValidConst k One        = check k 1 allBits
 isValidConst k (Id Input) = V.all (\(Know m a r) -> m .&. a == m .&. r) k
 isValidConst _ _ = True
 
@@ -71,6 +74,8 @@ adjustForFst k (OpOp2 And) = V.map (\(Know m a r) -> Know (m .&. r) a (m .&. r))
 adjustForFst k (OpOp2 Or)  = V.map (\(Know m a r) -> Know (m .&. (complement r)) a 0) k
 adjustForFst k _ = k
 
+
+
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
 adjustForSnd k op _ = adjustForFst k op -- #todo: partial evaluate E and use that info!
 
@@ -80,6 +85,9 @@ adjustForIf0Then k _ = k
 adjustForIf0Else :: Knowledge -> E -> Knowledge
 adjustForIf0Else k _ = k
 
+evalPart :: E -> KnownPoint -> KnownPoint
+evalPart e (Know m a r) = let (T r' m') = evalEGen (T a allBits) (T 0 0) (T 0 0) e
+                          in (Know m' a r')
 
 ------------------
 
