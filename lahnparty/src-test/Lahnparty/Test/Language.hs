@@ -19,11 +19,14 @@ testPP e s = testCase s $ assertEqual "" (show e) s
 
 
 testEval :: P -> [Word64] -> [Word64] -> Test
-testEval p inputs outputs = testGroup (show p)
+testEval p inputs outputs = testGroup (show p) $
   [ testCase (showHex input . showString " -> " . showHex output $ "") $
       assertEqual "" (evalP input p) output
   | input <- inputs
   | output <- outputs
+  ] ++
+  [ testCase "multiEval" $
+      assertEqual "" (multiEvalP inputs p) [evalP input p | input <- inputs]
   ]
 
 tests = evalTests ++ ppTests
