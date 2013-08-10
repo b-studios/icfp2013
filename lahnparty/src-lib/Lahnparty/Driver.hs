@@ -375,11 +375,6 @@ opStringToOp "or" = OpOp2 Or
 opStringToOp "xor" = OpOp2 Xor
 opStringToOp "plus" = OpOp2 Plus
 
-{-
-main = do
--- > Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
--}
-
 main = do
   let size = 8
 
