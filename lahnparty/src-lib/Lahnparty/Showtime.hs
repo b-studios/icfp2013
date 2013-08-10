@@ -15,7 +15,7 @@ import Lahnparty.ProblemsDB
 import Lahnparty.Types
 
 -- Time to wait between problems in seconds.
-wait = 3
+wait = 5
 
 solveProblems :: Generator -> [ProblemID] -> IO ()
 solveProblems g ids = mapM_ solveProblem ids
