@@ -23,6 +23,7 @@ tristateConst v = T v $ complement 0
 tristateUndef = T 0 0
 
 instance ProgData TristateWord where
+  evalHole = tristateUndef
   zero = tristateConst 0
   one  = tristateConst 1
 

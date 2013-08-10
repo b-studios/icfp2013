@@ -19,7 +19,8 @@ data P
     deriving Eq
 
 data E
-  = Zero
+  = Hole
+  | Zero
   | One
   | Id !Id
   | If0 !E !E !E
@@ -72,6 +73,7 @@ evalE = evalEGen
 
 -- General version, soon with polymorphic interface.
 evalEGen :: ProgData t => t -> t -> t -> E -> t
+evalEGen input byte acc Hole = evalHole
 evalEGen input byte acc Zero = zero
 evalEGen input byte acc One = one
 evalEGen input byte acc (Id Input) = input
@@ -94,6 +96,7 @@ evalEGen input byte acc (Op2 op2 e1 e2) =
 
 
 class ProgData t where
+  evalHole :: t
   zero :: t
   one :: t
   evalOp1 :: Op1 -> t -> t
@@ -102,6 +105,7 @@ class ProgData t where
   doShift :: (Word64 -> Word64) -> (t -> t)
 
 instance ProgData Word64 where
+  evalHole = error "evalHole :: Word64"
   zero = 0
   one = 1
 
