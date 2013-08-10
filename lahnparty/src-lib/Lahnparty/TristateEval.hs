@@ -2,7 +2,6 @@ module Lahnparty.TristateEval where
 
 import Data.Bits
 import Data.Word (Word64)
-import Data.Int (Int64)
 import Numeric
 
 import Lahnparty.Language
