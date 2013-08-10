@@ -376,6 +376,20 @@ randomInputs programs =
   , 0x386D684B9CEFA4DE
   ]
 
+
+fetchTrainingData size ops =
+  resp <- trainRequestSizeOps size ops
+  case resp in
+   OK (TrainingProblem program id size operators) ->
+     resp
+
+   HTTPError (4,2,9) _ -> do
+     waitForRateLimit429
+     fetchTrainingData size ops
+
+   err -> do
+     unexpected err probId
+
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData req =
   let (OK (TrainingProblem program id size operators)) = req in
@@ -417,7 +431,7 @@ solveATrainProblemOfSize g size = do
   -- req <- trainRequestSize size
 
   -- (b) get a training program of the given size and specified ops
-  resp <- trainRequestSizeOps size TrainTFold
+  resp <- fetchTrainingData size TrainTFold
 
   -- (c) Alternatively, to test again on some training program, modify with the response, as output by the program. Example:
   -- let resp = OK (TrainingProblem "(lambda (x_2797) (fold x_2797 0 (lambda (x_2797 x_2798) (xor x_2797 1))))" "Wa5vCJ1BYV6Hz3fv0XbKoVQs" 8 ["tfold","xor"])
