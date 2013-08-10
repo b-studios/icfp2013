@@ -15,6 +15,7 @@ build-type:          Simple
 cabal-version:       >= 1.8
 
 library
+  ghc-options:         -O2
   hs-source-dirs:      src-lib
   exposed-modules:     Lahnparty.Language,
                        Lahnparty.Generator1,
@@ -30,18 +31,21 @@ library
   build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers
 
 executable lahnparty-solver-real
+  ghc-options:         -O2
   hs-source-dirs:      src-exec
   main-is:             solver.hs
   build-depends:       lahnparty,
                        base >= 4.5
 
 executable lahnparty-train
+  ghc-options:         -O2
   hs-source-dirs:      src-exec
   main-is:             train.hs
   build-depends:       lahnparty,
                        base >= 4.5
 
 executable lahnparty-measure
+  ghc-options:         -O2
   hs-source-dirs:      src-exec
   main-is:             measure.hs
   build-depends:       lahnparty,
