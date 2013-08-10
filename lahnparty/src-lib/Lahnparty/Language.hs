@@ -67,15 +67,16 @@ evalP input (Lambda e) =
 -- | Evaluate expressions.
 
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
-evalE input byte acc Zero = 0
-evalE input byte acc One = 1
+evalE input byte acc Zero = zero
+evalE input byte acc One = one
 evalE input byte acc (Id Input) = input
 evalE input byte acc (Id Byte) = byte
 evalE input byte acc (Id Acc) = acc
 evalE input byte acc (If0 e1 e2 e3) =
-  if evalE input byte acc e1 == 0
-    then evalE input byte acc e2
-    else evalE input byte acc e3
+    evalIf (evalE input byte acc e1)
+      (evalE input byte acc e2)
+      (evalE input byte acc e3)
+
 evalE input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
     values = listOfFoldedValues (evalE input byte acc e0)
@@ -86,18 +87,33 @@ evalE input byte acc (Op1 op1 e1) =
 evalE input byte acc (Op2 op2 e1 e2) =
   evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
 
-evalOp1 :: Op1 -> Word64 -> Word64
-evalOp1 Not = complement
-evalOp1 Shl1 = (`shiftL` 1)
-evalOp1 Shr1 = (`shiftR` 1)
-evalOp1 Shr4 = (`shiftR` 4)
-evalOp1 Shr16 = (`shiftR` 16)
 
-evalOp2 :: Op2 -> Word64 -> Word64 -> Word64
-evalOp2 And = (.&.)
-evalOp2 Or = (.|.)
-evalOp2 Xor = xor
-evalOp2 Plus = (+)
+class ProgData t where
+  zero :: t
+  one :: t
+  evalOp1 :: Op1 -> t -> t
+  evalOp2 :: Op2 -> t -> t -> t
+  evalIf :: t -> t -> t -> t
+
+instance ProgData Word64 where
+  zero = 0
+  one = 1
+
+  evalIf v1 v2 v3 =
+    if v1 == 0
+      then v2
+      else v3
+
+  evalOp1 Not = complement
+  evalOp1 Shl1 = (`shiftL` 1)
+  evalOp1 Shr1 = (`shiftR` 1)
+  evalOp1 Shr4 = (`shiftR` 4)
+  evalOp1 Shr16 = (`shiftR` 16)
+
+  evalOp2 And = (.&.)
+  evalOp2 Or = (.|.)
+  evalOp2 Xor = xor
+  evalOp2 Plus = (+)
 
 listOfFoldedValues :: Word64 -> [Word64]
 listOfFoldedValues =
