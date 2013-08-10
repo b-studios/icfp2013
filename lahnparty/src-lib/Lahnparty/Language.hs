@@ -66,26 +66,32 @@ evalP input (Lambda e) =
 
 -- | Evaluate expressions.
 
+-- Specialized version, with current interface.
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
-evalE input byte acc Zero = zero
-evalE input byte acc One = one
-evalE input byte acc (Id Input) = input
-evalE input byte acc (Id Byte) = byte
-evalE input byte acc (Id Acc) = acc
-evalE input byte acc (If0 e1 e2 e3) =
-    evalIf (evalE input byte acc e1)
-      (evalE input byte acc e2)
-      (evalE input byte acc e3)
+evalE = evalEGen
 
-evalE input byte acc (Fold e0 e1 e2) = foldr f initial values
+-- General version, soon with polymorphic interface.
+-- evalEGen :: ProgData t => t -> t -> t -> E -> t
+evalEGen :: Word64 -> Word64 -> Word64 -> E -> Word64
+evalEGen input byte acc Zero = zero
+evalEGen input byte acc One = one
+evalEGen input byte acc (Id Input) = input
+evalEGen input byte acc (Id Byte) = byte
+evalEGen input byte acc (Id Acc) = acc
+evalEGen input byte acc (If0 e1 e2 e3) =
+    evalIf (evalEGen input byte acc e1)
+      (evalEGen input byte acc e2)
+      (evalEGen input byte acc e3)
+
+evalEGen input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
-    values = listOfFoldedValues (evalE input byte acc e0)
-    initial = evalE input byte acc e1
-    f x y = evalE input x y e2
-evalE input byte acc (Op1 op1 e1) =
-  evalOp1 op1 (evalE input byte acc e1)
-evalE input byte acc (Op2 op2 e1 e2) =
-  evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
+    values = listOfFoldedValues (evalEGen input byte acc e0)
+    initial = evalEGen input byte acc e1
+    f x y = evalEGen input x y e2
+evalEGen input byte acc (Op1 op1 e1) =
+  evalOp1 op1 (evalEGen input byte acc e1)
+evalEGen input byte acc (Op2 op2 e1 e2) =
+  evalOp2 op2 (evalEGen input byte acc e1) (evalEGen input byte acc e2)
 
 
 class ProgData t where
