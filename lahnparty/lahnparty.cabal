@@ -21,6 +21,7 @@ library
                        Lahnparty.Generator1,
                        Lahnparty.Generator2,
                        Lahnparty.GeneratorTH,
+                       Lahnparty.GeneratorTH2,
                        Lahnparty.WebAPI,
                        Lahnparty.ProblemsDB,
                        Lahnparty.Driver,
