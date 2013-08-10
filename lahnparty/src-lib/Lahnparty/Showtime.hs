@@ -15,7 +15,7 @@ import Lahnparty.ProblemsDB
 import Lahnparty.Types
 
 -- Time to wait between problems in seconds.
-wait = 3
+wait = 5
 
 solveProblems :: Generator -> [ProblemID] -> IO ()
 solveProblems g ids = mapM_ solveProblem ids
@@ -34,4 +34,8 @@ solveProblemsOfSizeFiltered g n p = solveProblems g (filter p (sizeToIDs n))
 solveProblemsInRange :: Generator -> Int -> Int -> IO ()
 solveProblemsInRange g from to = mapM_ (solveProblemsOfSize g) [from .. to]
 
-main = solveProblemsOfSizeFiltered findP 8 hasNoFold
+main = do
+  solveProblemsOfSizeFiltered findP 8 hasTFold
+  solveProblemsOfSizeFiltered findP 9 hasTFold
+  solveProblemsOfSizeFiltered findP 10 hasNoFold
+  solveProblemsOfSizeFiltered findP 10 hasTFold

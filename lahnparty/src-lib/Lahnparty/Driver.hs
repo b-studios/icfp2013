@@ -27,7 +27,7 @@ failOnTimeout :: Show t => Response t -> Maybe ProblemID -> IO ()
 failOnTimeout err pid = do
   case err of
     HTTPError (4,1,0) str -> do
-      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> "on problem ID" ++ show i) pid
+      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> "on problem ID: " ++ show i) pid
       putStrLn $ "Error message: " ++ str
       exitFailure
     _ -> do
@@ -52,6 +52,8 @@ driver gen probId size ops = do
     mapM_ print $ take 10 programs
 
     let inputs = randomInputs programs
+
+    putStrLn "Sending eval request:"
     result <- evalRequest probId inputs
 
     case result of
