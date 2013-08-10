@@ -399,9 +399,8 @@ fetchTrainingData size ops = do
       failUnexpected err Nothing
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
-parseTrainingData req =
-  let (OK (TrainingProblem program id size operators)) = req in
-  (id, size, map opStringToOp operators)
+parseTrainingData (OK (TrainingProblem _ pid size ops)) = (pid, size, ops')
+  where ops' = map opStringToOp $ filter (/= "bonus") ops
 
 opStringToOp "if0" = OpIf0
 opStringToOp "fold" = OpFold
