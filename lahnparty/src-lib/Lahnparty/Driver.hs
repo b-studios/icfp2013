@@ -31,6 +31,10 @@ checkOpsNoFolds ops =
   checkOpsNoFold ops &&
   checkOpsNoTFold ops
 
+waitForRateLimit429 = do
+  putStrLn "Too many requests, trying again."
+  threadDelay 5000000 -- 5 seconds
+
 -- Wrapper for usage in Showtime
 driverIf gen probId size ops checkOps =
   if (checkOps ops) then
@@ -66,8 +70,7 @@ driver gen probId size ops =
         getMoreInfo probId programsFilt
 
       HTTPError (4,2,9) _ -> do
-        putStrLn "Too many requests, trying again."
-        threadDelay 5000000 -- 5 seconds
+        waitForRateLimit429
         driver gen probId size ops
 
       err -> do
@@ -95,9 +98,9 @@ getMoreInfo probId (p : programs) = do
       getMoreInfo probId programsFilt
 
     HTTPError (4,2,9) _ -> do
-      putStrLn "Too many requests, trying again."
-      threadDelay 5000000 -- 5 seconds
+      waitForRateLimit429
       getMoreInfo probId (p : programs)
+
     err ->
       unexpected err probId
 
