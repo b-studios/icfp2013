@@ -4,6 +4,7 @@ import Lahnparty.Language
 import Lahnparty.Types
 import Data.List(delete)
 import Data.Word (Word64)
+import Debug.Trace
 
 type Argument = Word64
 type Result = Word64
@@ -117,6 +118,8 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                                 e0 <- findE i newops False False,
                                                 e1 <- findE j newops False False]
                         else []
+    -- This shouldn't happen.
+    gen other  = traceShow other $ error (show other)
 
 findETopFold :: Size -> [Op] -> [E]
 findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])                     -- prune: fold with constant function (0, 1, input) reduces to constant
