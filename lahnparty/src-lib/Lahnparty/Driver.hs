@@ -391,9 +391,23 @@ opStringToOp "or" = OpOp2 Or
 opStringToOp "xor" = OpOp2 Xor
 opStringToOp "plus" = OpOp2 Plus
 
-main = do
-  let size = 8
+-- Copy-n-pasted top-level structure from Showtime.hs
 
+rangeSizeStart = 8
+rangeSizeEnd = 13
+nProblemsForSize = 2
+
+main = solveTrainProblemsOfSizeFromTo findP rangeSizeStart rangeSizeEnd
+
+solveTrainProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()
+solveTrainProblemsOfSizeFromTo g from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize) [from .. to]
+
+solveTrainProblemsOfSize :: Generator -> Int -> Size -> IO ()
+solveTrainProblemsOfSize g nProbs size =
+  mapM_ (const $ solveATrainProblemOfSize g size) [ 1 .. nProbs ]
+
+solveATrainProblemOfSize :: Generator -> Size -> IO ()
+solveATrainProblemOfSize g size = do
   -- (1) First, get the raw training problem. There are different ways of doing that.
 
   -- (a) get a training program of the given size
