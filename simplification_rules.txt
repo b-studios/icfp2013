@@ -1,7 +1,5 @@
 possible simplification rules:
 
-anyShift 0 -> 0 ..implemented
-
 0 and e -> 0 ...implemented
 0 or e -> e ...implemented
 0 xor e -> e ...implemented

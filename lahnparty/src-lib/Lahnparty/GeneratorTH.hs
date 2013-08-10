@@ -24,10 +24,6 @@ isOp3 OpIf0 = True
 isOp3 OpFold = True
 isOp3 _ = False
 
-isShift :: Op1 -> Bool
-isShift Not = False
-isShift _ = True
-
 arity :: Op -> Int
 arity (OpOp1 _) = 1
 arity (OpOp2 _) = 2
@@ -95,7 +91,6 @@ findE n ops infold mustfold = if (n<5 && mustfold)
     gen :: Op -> [E]
     gen (OpOp1 op1) = [ Op1 op1 e0
                       | e0 <- findE (n-1) ops infold mustfold
-                      , not (isShift op1 && e0 == Zero) -- shifts on Zero always have smaller equivalents. PG
                       ]
     gen (OpOp2 op2) = if mustfold
                       -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
