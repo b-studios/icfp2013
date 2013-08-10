@@ -131,14 +131,13 @@ findE n ops infold mustfold = if (n<5 && mustfold)
 
 findETopFold :: Size -> [Op] -> [E]
 findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])                     -- prune: fold with constant function (0, 1, input) reduces to constant
-                       ++ [ Fold e0 e1 e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
+                       ++ [ Fold e0 Zero e2 |  i <- [1..n-4], j <-[1..n-3-i], let k = n-2-i-j,
                                                 let newops = delete OpFold ops,
                                                 e2 <- findE k newops True  False,   -- e2 before e0 and e1 to prune on it
                                                 e2 /= Zero,
                                                 e2 /= One,
                                                 e2 /= (Id Input),
-                                                e0 <- findE i newops False False,
-                                                e1 <- findE j newops False False]
+                                                e0 <- findE i newops False False]
 
 -- number of generated programs for given size using all operators:
 -- size  7:    379164
