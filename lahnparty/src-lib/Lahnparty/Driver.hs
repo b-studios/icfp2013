@@ -2,6 +2,7 @@ module Lahnparty.Driver where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad
+import Data.Word (Word64)
 import System.Exit (exitFailure)
 
 
@@ -39,8 +40,16 @@ waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
   threadDelay 5000000 -- 5 seconds
 
-driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
-driver gen probId size ops = do
+type EvalRequester = ProblemID -> [Word64] -> IO (Response EvalResponse)
+
+-- | The old driver (this should work the same as before).
+driver = genericDriver evalRequest
+
+-- | Distributed driver.
+distDriver wid = genericDriver (distEvalRequest wid)
+
+genericDriver :: EvalRequester -> Generator -> ProblemID -> Size -> [Op] -> IO ()
+genericDriver eval gen probId size ops = do
     
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
     
@@ -55,7 +64,7 @@ driver gen probId size ops = do
     let inputs = randomInputs programs
 
     putStrLn "Sending eval request:"
-    result <- evalRequest probId inputs
+    result <- eval probId inputs
 
     case result of
 
@@ -453,3 +462,12 @@ solveATrainProblemOfSize g ops size = do
 
   -- (3) Finally, try to solve the problem
   driver findP probId size ops
+
+solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
+solveDistTrainingProblem g wid ops size = do
+    OK (DistTrainingProblem prob wnum wtot) <- distTrainRequest wid size ops
+    putStrLn $ "Problem: " ++ show prob
+    putStrLn $ "Worker Number: " ++ show wnum
+    putStrLn $ "Total Workers: " ++ show wtot
+    let (pid,size,ops) = parseTrainingData (OK prob)
+    distDriver wid findP pid size ops

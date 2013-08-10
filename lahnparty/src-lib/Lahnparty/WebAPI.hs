@@ -94,6 +94,7 @@ data DistProblem = DistProblem ProblemID Int Int
 
 -- | Description of a subset of a problem to work on.
 data DistTrainingProblem = DistTrainingProblem TrainingProblem Int Int
+  deriving (Eq,Show)
 
 -- | Register as a worker.
 registerWorker :: WorkerID -> IO (Response DistProblem)
@@ -110,7 +111,6 @@ distTrainRequest wid n fold =
   where ops = case fold of TrainNone  -> []
                            TrainFold  -> ["fold"]
                            TrainTFold -> ["tfold"]
-
 
 
 --
