@@ -45,6 +45,14 @@ generate size ops points = undefined
 
 type Generator = Size -> [Op] -> [P]
 
+-- | This generator assumes that all programs follow the following
+-- pattern and contain no fold or additional if0 nodes.
+--
+-- (lambda (x) (if0 ... ... ...)
+findBonusP :: Generator
+findBonusP size ops =
+  map Lambda $ concatMap (\s -> findETopIf0 s (delete OpIf0 ops)) [4..size - 1]
+
 findP :: Generator
 findP size ops =
   if OpTFold `elem` ops
@@ -162,6 +170,15 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                         else []
     -- This shouldn't happen.
     gen other  = traceShow other $ error (show other)
+
+-- | Construct all programs that start with if0 and don't contain folds.
+findETopIf0 :: Size -> [Op] -> [E]
+findETopIf0 n ops = [ If0 e0 e1 e2 |  i <- [1..n-3], j <-[1..n-2-i], let k = n-1-i-j,
+                                      e0 <- findE i ops False False,
+                                      e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                      e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
+                                      e1 <- findE j ops False False,
+                                      e2 <- findE k ops False False]
 
 findETopFold :: Size -> [Op] -> [E]
 findETopFold n ops = (if (n==5) then [Zero, One, Id Input] else [])                     -- prune: fold with constant function (0, 1, input) reduces to constant

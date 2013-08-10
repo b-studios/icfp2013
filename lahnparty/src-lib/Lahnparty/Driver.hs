@@ -427,11 +427,19 @@ opStringToOp "or" = OpOp2 Or
 opStringToOp "xor" = OpOp2 Xor
 opStringToOp "plus" = OpOp2 Plus
 
+-- the magic size of bonus problems
+bonus = 42
+
 -- Copy-n-pasted top-level structure from Showtime.hs
 
 rangeSizeStart = 16
 rangeSizeEnd = 20
 nProblemsForSize = 3
+
+-- available generators to be used as first argument of solveTranProblemsOfSizeFromTo:
+--
+--  * findP        normal generator
+--  * findBonusP   generator for bonus problems, experimental
 
 main = solveTrainProblemsOfSizeFromTo findP TrainNone rangeSizeStart rangeSizeEnd
 
