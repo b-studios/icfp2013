@@ -19,7 +19,8 @@ data P
     deriving Eq
 
 data E
-  = Zero
+  = Hole
+  | Zero
   | One
   | Id !Id
   | If0 !E !E !E
@@ -57,6 +58,7 @@ sizeE (If0 e1 e2 e3) = 1 + sizeE e1 + sizeE e2 + sizeE e3
 sizeE (Fold e1 e2 e3) = 2 + sizeE e1 + sizeE e2 + sizeE e3
 sizeE (Op1 _ e1) = 1 + sizeE e1
 sizeE (Op2 _ e1 e2) = 1 + sizeE e1 + sizeE e2
+sizeE Hole = error "sizeE of Hole"
 
 -- | Evaluate programs.
 
@@ -85,6 +87,7 @@ evalE input byte acc (Op1 op1 e1) =
   evalOp1 op1 (evalE input byte acc e1)
 evalE input byte acc (Op2 op2 e1 e2) =
   evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
+evalE input byte acc Hole = error "evalE of Hole"
 
 evalOp1 :: Op1 -> Word64 -> Word64
 evalOp1 Not = complement
@@ -129,6 +132,7 @@ prettyE (Op1 o e)       = "(" ++ prettyOp1 o ++ " "
 prettyE (Op2 o e1 e2)   = "(" ++ prettyOp2 o ++ " "
                               ++ prettyE e1 ++ " "
                               ++ prettyE e2 ++ ")"
+prettyE Hole = error "prettyE of Hole"
 
 -- | Register names.
 prettyId Input = "input"
