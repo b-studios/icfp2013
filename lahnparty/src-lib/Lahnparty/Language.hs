@@ -71,8 +71,7 @@ evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
 evalE = evalEGen
 
 -- General version, soon with polymorphic interface.
--- evalEGen :: ProgData t => t -> t -> t -> E -> t
-evalEGen :: Word64 -> Word64 -> Word64 -> E -> Word64
+evalEGen :: ProgData t => t -> t -> t -> E -> t
 evalEGen input byte acc Zero = zero
 evalEGen input byte acc One = one
 evalEGen input byte acc (Id Input) = input
@@ -85,7 +84,7 @@ evalEGen input byte acc (If0 e1 e2 e3) =
 
 evalEGen input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
-    values = listOfFoldedValues (evalEGen input byte acc e0)
+    values = listOfFoldedValues doShift (evalEGen input byte acc e0)
     initial = evalEGen input byte acc e1
     f x y = evalEGen input x y e2
 evalEGen input byte acc (Op1 op1 e1) =
@@ -100,6 +99,7 @@ class ProgData t where
   evalOp1 :: Op1 -> t -> t
   evalOp2 :: Op2 -> t -> t -> t
   evalIf :: t -> t -> t -> t
+  doShift :: (Word64 -> Word64) -> (t -> t)
 
 instance ProgData Word64 where
   zero = 0
@@ -121,15 +121,16 @@ instance ProgData Word64 where
   evalOp2 Xor = xor
   evalOp2 Plus = (+)
 
+  doShift = id
+
 shiftAmount Shl1 = -1
 shiftAmount Shr1  = 1
 shiftAmount Shr4  = 4
 shiftAmount Shr16 = 16
 shiftAmount Not = error "shiftAmount Not"
 
-listOfFoldedValues :: Word64 -> [Word64]
-listOfFoldedValues =
-  take 8 . map (`shiftR` 56) . iterate (`shiftL` 8)
+listOfFoldedValues doShift =
+  take 8 . map (doShift (`shiftR` 56)) . iterate (doShift (`shiftL` 8))
 
 --
 -- * Pretty printer

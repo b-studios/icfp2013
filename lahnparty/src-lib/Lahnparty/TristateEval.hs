@@ -27,13 +27,16 @@ instance ProgData TristateWord where
   evalOp2 = evalOp2Tristate
   evalIf = evalIfTristate
 
+  doShift = shiftOnBothComponents
+
+shiftOnBothComponents shiftFun (T bits mask) = T (shiftFun bits) (shiftFun mask)
 
 evalOp1Tristate :: Op1 -> TristateWord -> TristateWord
 -- Not flips bits but keeps definedness.
 evalOp1Tristate Not (T bits mask) = T (complement bits) mask
 -- Shifts create extra definedness, as zero bits.
-evalOp1Tristate shiftOp (T bits mask) =
-  orDefined (T (evalOp1 shiftOp bits) (evalOp1 shiftOp mask))
+evalOp1Tristate shiftOp t =
+  orDefined (shiftOnBothComponents (evalOp1 shiftOp) t)
             (T 0 (definedMask shiftOp))
 
 
