@@ -64,6 +64,11 @@ evalP :: Word64 -> P -> Word64
 evalP input (Lambda e) =
   evalE input (error "not in fold") (error "not in fold") e
 
+-- | Evaluate programs on multiple inputs.
+
+multiEvalP :: [Word64] -> P -> [Word64]
+multiEvalP inputs p = [evalP input p | input <- inputs]
+
 -- | Evaluate expressions.
 
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
