@@ -357,11 +357,10 @@ randomInputs programs =
   , 0x386D684B9CEFA4DE
   ]
 
-fetchTrainingData :: Size -> IO (ProblemID, Size, [Op])
-fetchTrainingData size = do
-  req @ (OK (TrainingProblem program id size operators)) <- trainRequestSizeOps size TrainTFold
-  print req
-  return (id, size, map opStringToOp operators)
+parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
+parseTrainingData req =
+  let (OK (TrainingProblem program id size operators)) = req in
+  (id, size, map opStringToOp operators)
 
 opStringToOp "if0" = OpIf0
 opStringToOp "fold" = OpFold
@@ -378,11 +377,27 @@ opStringToOp "plus" = OpOp2 Plus
 
 {-
 main = do
-  let size = 5
-  -- trainRequestSizeOps size [] []
 -- > Ok (TrainingProblem "(lambda (x_3767) (not (plus 1 x_3767)))" "Qae2h1FwmKd3cTPhFhzSTAKS" 5 ["not","plus"])
 -}
 
 main = do
-  (probId, size, ops) <- fetchTrainingData 8
+  let size = 8
+
+  -- (1) First, get the raw training problem. There are different ways of doing that.
+
+  -- (a) get a training program of the given size
+  -- req <- trainRequestSize size
+
+  -- (b) get a training program of the given size and specified ops
+  resp <- trainRequestSizeOps size TrainTFold
+
+  -- (c) Alternatively, to test again on some training program, modify with the response, as output by the program. Example:
+  -- let resp = OK (TrainingProblem "(lambda (x_2797) (fold x_2797 0 (lambda (x_2797 x_2798) (xor x_2797 1))))" "Wa5vCJ1BYV6Hz3fv0XbKoVQs" 8 ["tfold","xor"])
+
+  -- (2) Then, print and parse the response
+  print resp
+
+  let (probId, size, ops) = parseTrainingData resp
+
+  -- (3) Finally, try to solve the problem
   driver findP probId size ops
