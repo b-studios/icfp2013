@@ -12,6 +12,7 @@ import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 import Lahnparty.Language
+import Lahnparty.TristateEval
 
 main = defaultMain tests
 
@@ -28,7 +29,7 @@ testEval p inputs outputs = testGroup (show p)
   | output <- outputs
   ]
 
-tests = evalTests ++ ppTests
+tests = evalTests ++ ppTests ++ tristateTests
 
 ppTests = [ testPP (Lambda (Op2 And (Id Input) (Op1 Shr16 (Id Input)))) "(lambda (input) (and input (shr16 input)))"
           , testPP (Lambda (Op1 Not Zero)) "(lambda (input) (not 0))"
@@ -5315,3 +5316,28 @@ evalTests =
     ]
 
   ]
+
+tristateTests = 
+  [ testProperty "unary operations on defined values" propDefined1
+  , testProperty "binary operations on defined values" propDefined2
+  ]
+
+instance Arbitrary Op1 where
+  arbitrary = elements [ minBound .. maxBound ]
+instance Arbitrary Op2 where
+  arbitrary = elements [ minBound .. maxBound ]
+
+-- tristateConst forms a commutative diagram with (evalOp1 op1)
+propDefined1 op1 inp1 =
+  evalOp1 op1 (tristateConst inp1) == tristateConst (evalOp1 op1 inp1)
+  where
+    types = (inp1 :: Word64)
+
+-- Fails on Plus, since Plus doesn't work even on defined values - the evaluator is too incomplete.
+propDefined2 op2 inp1 inp2 =
+  evalOp2 op2 (tristateConst inp1) (tristateConst inp2) == tristateConst (evalOp2 op2 inp1 inp2)
+  where
+    types = (inp1 :: Word64, inp2 :: Word64)
+
+-- TODO: test truth tables
+-- test that evaluation is conservative
