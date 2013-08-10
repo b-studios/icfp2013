@@ -28,14 +28,10 @@ solveProblems g ids = mapM_ solveProblem ids
 solveProblemsOfSize :: Generator -> Int -> IO ()
 solveProblemsOfSize g = solveProblems g . sizeToIDs
       
-solveProblemsOfSizeFiltered :: Generator -> Int -> (ProblemID -> Bool) -> IO ()
-solveProblemsOfSizeFiltered g n p = solveProblems g (filter p (sizeToIDs n))
+solveProblemsOfSizeFiltered :: Generator -> (ProblemID -> Bool) -> Int -> IO ()
+solveProblemsOfSizeFiltered g p n = solveProblems g (filter p (sizeToIDs n))
 
 solveProblemsInRange :: Generator -> Int -> Int -> IO ()
 solveProblemsInRange g from to = mapM_ (solveProblemsOfSize g) [from .. to]
 
-main = do
-  solveProblemsOfSizeFiltered findP 8 hasTFold
-  solveProblemsOfSizeFiltered findP 9 hasTFold
-  solveProblemsOfSizeFiltered findP 10 hasNoFold
-  solveProblemsOfSizeFiltered findP 10 hasTFold
+main = mapM_ (solveProblemsOfSizeFiltered findP hasNoFold) [11 .. 17]
