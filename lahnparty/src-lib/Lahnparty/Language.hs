@@ -3,9 +3,10 @@ module Lahnparty.Language where
 import Data.Bits
 import Data.Word (Word64)
 
-import qualified Data.List as Vec (map, zipWith, zipWith3, transpose)
+import qualified Data.Vector.Unboxed as Vec (Vector, fromList, toList, map, zipWith, zipWith3)
+import Data.List (transpose)
 
-type Vec = [Word64]
+type Vec = Vec.Vector Word64
 
 data Id =
   -- | The overall input (bound by the top-level lambda).
@@ -72,7 +73,8 @@ evalP input (Lambda e) =
 
 multiEvalP :: [Word64] -> P -> [Word64]
 multiEvalP inputs (Lambda e) =
-  multiEvalE inputs (error "not in fold") (error "not in fold") e
+  Vec.toList $
+    multiEvalE (Vec.fromList inputs) (error "not in fold") (error "not in fold") e
 
 -- | Evaluate expressions.
 
@@ -111,7 +113,7 @@ multiEvalE input byte acc (If0 e1 e2 e3) =
     (multiEvalE input byte acc e3)
 multiEvalE input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
-    values = Vec.transpose $ Vec.map listOfFoldedValues (multiEvalE input byte acc e0)
+    values = map Vec.fromList $ transpose $ map listOfFoldedValues $ Vec.toList (multiEvalE input byte acc e0)
     initial = multiEvalE input byte acc e1
     f x y = multiEvalE input x y e2
 multiEvalE input byte acc (Op1 op1 e1) =
