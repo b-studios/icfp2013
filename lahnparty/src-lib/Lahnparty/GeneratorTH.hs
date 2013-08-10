@@ -109,10 +109,14 @@ findE n ops infold mustfold = if (n<5 && mustfold)
                                               e2 <- findE k ops' infold False]
                           ++ [ If0 e0 e1 e2 |  i <- [1..n-7], j <-[1..n-6-i], let k = n-1-i-j,
                                               e0 <- findE i ops' infold False,
+                                              e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                              e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
                                               e1 <- findE j ops' infold False,
                                               e2 <- findE k ops  infold True]
                         else [ If0 e0 e1 e2 |  i <- [1..n-3], j <-[1..n-2-i], let k = n-1-i-j,
                                               e0 <- findE i ops infold False,
+                                              e0 /= Zero,                                      -- prune: if0 0 e1 e2 always has smaller equivalent
+                                              e0 /= One,                                       -- prune: if0 1 e1 e2 always has smaller equivalent
                                               e1 <- findE j ops infold False,
                                               e2 <- findE k ops infold False]
     gen OpFold      = if mustfold 

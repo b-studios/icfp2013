@@ -15,17 +15,17 @@ data Id =
     deriving Eq
 
 data P
-  = Lambda E
+  = Lambda !E
     deriving Eq
 
 data E
   = Zero
   | One
-  | Id Id
-  | If0 E E E
-  | Fold E E E
-  | Op1 Op1 E
-  | Op2 Op2 E E
+  | Id !Id
+  | If0 !E !E !E
+  | Fold !E !E !E
+  | Op1 !Op1 !E
+  | Op2 !Op2 !E !E
     deriving Eq
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
@@ -35,8 +35,8 @@ data Op2 = And | Or | Xor | Plus
     deriving (Eq, Ord)
 
 data Op
-  = OpOp1 Op1
-  | OpOp2 Op2
+  = OpOp1 !Op1
+  | OpOp2 !Op2
   | OpIf0
   | OpFold 
   | OpTFold
