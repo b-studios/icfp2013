@@ -477,8 +477,9 @@ guessStep problemID programs inputs outputs =
     when expensiveDebug $ do
       putStrLn $ "# generated programs after filtering: " ++
         show (length programsFilt)
-    putStrLn $ "First 10 generated programs after filtering:"
-    mapM_ print $ take 10 programsFilt
+      putStrLn $ "First 10 generated programs after filtering:"
+      mapM_ print $ take 10 programsFilt
+    putStrLn "Finish generating programs."
     if null programsFilt
       then do
         putStrLn "Gone through the list and found nothing!"
