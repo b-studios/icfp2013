@@ -24,6 +24,10 @@ isOp3 OpIf0 = True
 isOp3 OpFold = True
 isOp3 _ = False
 
+isShift :: Op1 -> Bool
+isShift Not = False
+isShift _ = True
+
 arity :: Op -> Int
 arity (OpOp1 _) = 1
 arity (OpOp2 _) = 2
@@ -55,6 +59,11 @@ findP size ops =
      map Lambda $ concatMap (\s -> findE s ops False (OpFold `elem` ops)) [1..size - 1]
 
 
+genOp1 ops n infold mustfold op1 =
+  [ Op1 op1 e0
+  | e0 <- findE (n-1) ops infold mustfold
+  , not (isShift op1 && e0 == Zero) -- shifts on Zero always have smaller equivalents. PG
+  ]
 
 newtype SizedE = SizedE E
             deriving Eq
@@ -80,8 +89,10 @@ findE 2 _   _      True = []
 -- if mustfold is true. This behavior is inconsistent with the description, so
 -- one of the two should be fixed (not sure which).
 -- XXX TH: no, everything is fine, mustfold is handled through pattern match
-findE 2 ops infold _    = let ops1 = map (\(OpOp1 op) -> Op1 op) $ filter isOp1 ops 
-                          in concat $ zipWith (map) ops1 (repeat (findE 1 undefined infold False))
+findE n@2 ops infold _  = let ops1 = map (\(OpOp1 op) -> op) $ filter isOp1 ops 
+                          in concat $ map gen ops1
+  where
+    gen = genOp1 ops n infold False
 findE n ops infold mustfold = if (n<5 && mustfold) 
                                 then []
                                 else concatMap gen ops
@@ -89,7 +100,7 @@ findE n ops infold mustfold = if (n<5 && mustfold)
     ops' = delete OpFold ops
 
     gen :: Op -> [E]
-    gen (OpOp1 op1) = map (Op1 op1) $ findE (n-1) ops infold mustfold
+    gen (OpOp1 op1) = genOp1 ops n infold mustfold op1
     gen (OpOp2 op2) = if mustfold
                       -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
 
