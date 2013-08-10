@@ -21,7 +21,11 @@ solveProblemsOfSize g n = mapM_ solveProblem (sizeToIDs n)
   where
     solveProblem i = do
       let (size,ops) = fetchData i
+
       driver g i size ops
+      -- Alternative to avoid programs with folds and still score points on the other ones:
+      -- driverIf g i size ops checkOpsNoFolds
+
       threadDelay (wait * 1000000)
 
 solveProblemsOfSizeFromTo :: Generator -> Int -> Int -> IO ()

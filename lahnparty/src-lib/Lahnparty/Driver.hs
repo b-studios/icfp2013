@@ -22,6 +22,22 @@ unexpected err probId = do
   print err
   error "Exiting defensively for a failure"
 
+checkOpsNoFold ops =
+  not (OpFold `elem` ops)
+checkOpsNoTFold ops =
+  not (OpTFold `elem` ops)
+
+checkOpsNoFolds ops =
+  checkOpsNoFold ops &&
+  checkOpsNoTFold ops
+
+-- Wrapper for usage in Showtime
+driverIf gen probId size ops checkOps =
+  if (checkOps ops) then
+     driver gen probId size ops
+   else
+     putStrLn $ "Skipping program " ++ show probId
+                ++ " with size = " ++ show size ++ "and ops = " ++ show ops
 
 driver :: Generator -> ProblemID -> Size -> [Op] -> IO ()
 driver gen probId size ops =
