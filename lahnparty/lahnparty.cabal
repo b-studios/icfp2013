@@ -40,6 +40,12 @@ executable lahnparty-train
   build-depends:       lahnparty,
                        base >= 4.5
 
+executable lahnparty-measure
+  hs-source-dirs:      src-exec
+  main-is:             measure.hs
+  build-depends:       lahnparty,
+                       base >= 4.5
+
 test-suite lahnparty-tests
   Type:                exitcode-stdio-1.0
   Hs-source-dirs:      src-test
