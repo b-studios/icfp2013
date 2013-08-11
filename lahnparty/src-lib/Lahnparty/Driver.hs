@@ -45,7 +45,7 @@ handleUnexpected err = do
 -- | Wait a few seconds because of a too many requests error.
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
-  threadDelay 5000000 -- 5 seconds
+  threadDelay 2000000 -- 2 seconds
     
 debugShowPrograms s programs =
   when expensiveDebug $ do
@@ -96,7 +96,7 @@ genericDriver eval guess gen probId sizes ops = do
       -- we should only get this error code from the proxy server
       HTTPError (4,2,0) _ -> do
         putStrLn "Waiting for more workers ..."
-        threadDelay 3000000 -- 3 seconds
+        threadDelay 1000000 -- 1 seconds
         runAgain
 
       HTTPError (4,2,9) _ -> do

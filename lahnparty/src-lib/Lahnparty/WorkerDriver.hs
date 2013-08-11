@@ -59,15 +59,15 @@ runWorker work url wid = do
         let (gen, wnum', wtot') = chooseGenerator size wnum wtot
         let sizes = chooseSizeRange size wnum' wtot'
         distDriver url wid gen pid sizes ops
-        sleepThenTryAgain 3
+        sleepThenTryAgain 1
       
       HTTPError (4,2,3) msg -> do
         putStrLn "Pool of workers is full."
-        sleepThenTryAgain 10
+        sleepThenTryAgain 1
       
       _ -> do
         putStrLn $ "Unexpected response: " ++ show response
-        sleepThenTryAgain 10
+        sleepThenTryAgain 1
   
   where
     sleepThenTryAgain wait = do
