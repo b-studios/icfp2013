@@ -1,15 +1,23 @@
+{-# LANGUAGE TupleSections #-}
 
 module Lahnparty.WorkerDriver where
 
 import Control.Concurrent (threadDelay)
+import Control.Monad (liftM3)
+import System.Environment (getArgs)
+import System.Exit (exitFailure)
 import Text.JSON (JSON)
+import Text.Read (readMaybe)
 
-import Lahnparty.Driver
-import Lahnparty.GeneratorTH2
+import Lahnparty.Driver hiding (main)
 import Lahnparty.Language
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
 import Lahnparty.WebAPI
+
+import qualified Lahnparty.GeneratorTH  as OldGen
+import qualified Lahnparty.GeneratorTH2 as NewGen
+import Lahnparty.GeneratorTH2 (Generator)
 
 --
 -- * Distributed Worker Driver
@@ -64,3 +72,31 @@ runWorker work wid g = do
       putStrLn "Sleeping..."
       threadDelay (wait * 1000000)
       runWorker work wid g
+
+main :: IO ()
+main = do
+    (run,gen,wid) <- getArgs >>= readArgs
+    run wid gen
+  where 
+    
+    readArgs [s,g,i] = liftM3 (,,) (readSet s) (readGen g) (readID i)
+    readArgs _ = usage
+    
+    readSet "live"  = return runLiveWorker
+    readSet "train" = return runTrainWorker
+    readSet _ = usage
+    
+    readGen "old"   = return OldGen.findP
+    readGen "new"   = return NewGen.findP
+    readGen _ = usage
+    
+    readID = maybe usage return . readMaybe
+    
+    usage = do 
+      putStrLn "lahnparty-run-worker {live|train} {old|new} wid"
+      putStrLn "  live  - run on live problems"
+      putStrLn "  train - run on training problems"
+      putStrLn "  old   - use old generator"
+      putStrLn "  new   - use new generator"
+      putStrLn "  wid   - an integer unique to this worker"
+      exitFailure
