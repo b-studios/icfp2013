@@ -68,8 +68,9 @@ genericDriver eval gen probId size ops = do
     
     let inputs = randomInputs
 
-    putStrLn "Sending eval request:"
+    putStr "Sending eval request: "
     result <- eval probId inputs
+    putStrLn "DONE!"
 
     case result of
 
