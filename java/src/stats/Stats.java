@@ -79,9 +79,10 @@ public class Stats {
 		
 		//System.out.format("ByOperator: %s", byOperator(myproblems));
 		
-		// populateDatabase(myproblems);
+		//populateDatabase(myproblems);
+		generateHaskellData(myproblems, "../myproblems.hs");
 		
-		generateListFromSizeToId(myproblems, "../sizeToProblems.hs");
+		//generateListFromSizeToId(myproblems, "../sizeToProblems.hs");
 	}
 	
 	public static void populateDatabase(List<ProblemMetadata> problems) throws SQLException {
