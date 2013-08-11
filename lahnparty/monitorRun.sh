@@ -1,7 +1,11 @@
 #!/bin/bash -x
 
 baseUrl="http://plse.informatik.uni-marburg.de:8888/"
+# In seconds
+pingInterval=20
+
 id=$1
+
 
 getErrorCode() {
   url="$1"
@@ -33,7 +37,7 @@ runSubProcess() {
   # bash -c 'echo $$; exec '"$* >&2" | {
     read pid;
     while :; do
-      sleep 20
+      sleep ${pingInterval}
       [ "$(mustKill)" -eq 1 ] && { kill $pid; return; }
     done
   }
