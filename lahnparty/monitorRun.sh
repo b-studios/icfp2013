@@ -1,4 +1,4 @@
-#!/bin/bash -v -x
+#!/bin/bash -x
 
 baseUrl="http://plse.informatik.uni-marburg.de:8888/"
 id=$1
@@ -14,7 +14,7 @@ getErrorCode() {
 }
 
 mustKill() {
-  mustKillUrl="${baseUrl}/stay-alive/${id}"
+  mustKillUrl="${baseUrl}stay-alive/${id}"
   code=$(getErrorCode "$mustKillUrl")
   if [ "$code" = 200 ]; then
     # Do nothing
