@@ -67,14 +67,29 @@ evalOp2Tristate
   :: Op2 -> TristateWord -> TristateWord -> TristateWord
 
 -- XXX Plus needs a different logic, return an undefined result
-evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T res maskNew -- tristateUndef
+evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T res definedOutFinal -- tristateUndef
   where
     res = bits1 + bits2
     bothDefined = mask1 .&. mask2
+
+    outToIn carryDefinedOut = 1 .|. (carryDefinedOut `shiftL` 1) -- 1 .|. (
+
+    carryDefinedOutFinal = f 0 -- XXX call f multiple times?
+    -- On our first test (concreteTest), one iteration seems best.
+    carryDefinedInFinal = outToIn carryDefinedOutFinal -- 1 .|. (f 0 `shiftL` 1)
+    definedOutFinal = bothDefined .&. carryDefinedInFinal -- We know an output if we know all inputs (the two bits and the carry).
+
+{-
     carryDefined = ((bothDefined .&. complement (bits1 `xor` bits2)) `shiftL` 1) .|. 1
     --carryDefined = last $ take {-XXX-} 5 $ iterate f 1
-    maskNew = bothDefined .&. carryDefined
-    f carryDefinedI = ((bothDefined .&. (carryDefined `shiftL` 1 .|. complement (bits1 `xor` bits2))) `shiftL` 1) .|. carryDefined
+-}
+
+    valuesAgree = complement (bits1 `xor` bits2)
+    f carryDefinedOut = carryDefinedOut'
+      where
+        carryDefinedIn' = outToIn carryDefinedOut
+        carryDefinedOut' = (bothDefined .&. (valuesAgree .|. carryDefinedIn'))
+
 
 -- We don't know a bit in the output
 --  1. if we don't know it in a input
@@ -82,24 +97,6 @@ evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T res maskNew -
 --    1. 1 , unknown
 --    1. 0 , unknown
 --    2. 1, 1  (known carry)
--- We know a bit 
-
--- mask1 
--- 
-{-
-
-    maskIntersect = mask1 .&. mask2
-    bits = map (testBit maskIntersect) [0 .. 63]
-    leastZeroBit = maybe 64 id (snd <$> listToMaybe (filter ((False ==) . fst) $ zip bits [0 .. ]))
-    maskNew = (bit leastZeroBit) - 1
-    inp1Filt = bits1 .&. maskNew
-    inp2Filt = bits2 .&. maskNew
-    res = (inp1Filt + inp2Filt) .&. maskNew
--}
-{-
-    leastZeroBit = -- head $ filter ((0 ==) . fst)
-      head $ [ index | b <- bits, b == False | index <- [1 .. ] ]
--}
 
 -- This evaluates one operation with 6-7 operations.
 evalOp2Tristate op2 t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) =
