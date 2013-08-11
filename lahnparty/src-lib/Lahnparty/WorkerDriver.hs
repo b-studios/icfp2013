@@ -7,6 +7,7 @@ import Control.Monad (liftM2)
 import Data.List (sort)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
+import System.IO
 import Text.JSON (JSON)
 
 import Lahnparty.Driver hiding (main)
@@ -93,6 +94,7 @@ partition n ss =
 
 main :: IO ()
 main = do
+    hSetBuffering stdout LineBuffering
     (run,wid) <- getArgs >>= readArgs
     run wid
   where 
