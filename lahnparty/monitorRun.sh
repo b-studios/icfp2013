@@ -54,7 +54,7 @@ runSubProcess() {
       [ "${res}" -eq 1 -o "${res}" -eq 2 ] && { kill $pid; break; }
     done
     [ "${res}" -eq 2 ] && exit 2
-    exec ./$(basename "$0") $id
+    exec ./$(basename "$0") ${id} ${port} ${host}
   }
 }
 
