@@ -1,7 +1,13 @@
+{-# LANGUAGE ParallelListComp #-}
+
 module Lahnparty.TristateEval where
+
+import Control.Applicative
 
 import Data.Bits
 import Data.Word (Word64)
+import Data.Maybe
+
 import Numeric
 
 import Lahnparty.Language
@@ -61,7 +67,19 @@ evalOp2Tristate
   :: Op2 -> TristateWord -> TristateWord -> TristateWord
 
 -- XXX Plus needs a different logic, return an undefined result
-evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = tristateUndef
+evalOp2Tristate Plus t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) = T res maskNew -- tristateUndef
+  where
+    maskIntersect = mask1 .&. mask2
+    bits = map (testBit maskIntersect) [0 .. 63]
+    leastZeroBit = maybe 64 id (snd <$> listToMaybe (filter ((False ==) . fst) $ zip bits [0 .. ]))
+    maskNew = (bit leastZeroBit) - 1
+    inp1Filt = bits1 .&. maskNew
+    inp2Filt = bits2 .&. maskNew
+    res = (inp1Filt + inp2Filt) .&. maskNew
+{-
+    leastZeroBit = -- head $ filter ((0 ==) . fst)
+      head $ [ index | b <- bits, b == False | index <- [1 .. ] ]
+-}
 
 -- This evaluates one operation with 6-7 operations.
 evalOp2Tristate op2 t1 @ (T bits1 mask1) t2 @ (T bits2 mask2) =
