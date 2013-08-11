@@ -12,12 +12,38 @@ require_relative 'problem.rb'
 
 
 class Server < Sinatra::Base
+  #####
+  # You might want to configure this:
+  #####
+
+  $worker_limit = 1
+
+  def get_problem
+
+    # production one
+
+    # => maybe sqlite, or by hand
+
+    # test one
+=begin
+Problem.new({
+  "id" => "pGRnFfwszdPRNzzDQAJxw16h",
+  "size" => 12,
+  "operators" => ["and","if0","or","shr4","xor"],
+  "challenge" => "(lambda (x_12795) (xor (if0 (or (and (shr4 0) x_12795) x_12795) x_12795 1) x_12795))"
+})
+=end
+
+    Problem.new(request_train)
+    
+  end
+  #####
+  # You don't need to configure what's below.
+  #####
 
   # Server
 
   $available_workers = []
-
-  $worker_limit = 1
 
   # problem that is currently being worked on
   $current_problem = nil
@@ -154,26 +180,6 @@ eos
 
 
   # communication with the real server
-
-  def get_problem
-
-    # production one
-
-    # => maybe sqlite, or by hand
-
-    # test one
-=begin
-Problem.new({
-  "id" => "pGRnFfwszdPRNzzDQAJxw16h",
-  "size" => 12,
-  "operators" => ["and","if0","or","shr4","xor"],
-  "challenge" => "(lambda (x_12795) (xor (if0 (or (and (shr4 0) x_12795) x_12795) x_12795 1) x_12795))"
-})
-=end
-
-    Problem.new(request_train)
-    
-  end
 
   def request_guess(id, program)
     resp = perform_request('guess', {
