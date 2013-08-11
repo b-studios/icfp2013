@@ -38,6 +38,6 @@ runSubProcess() {
   }
 }
 
-exe=./dist/build/lahnparty-run-worker/lahnparty-run-worker
+exe=./lahnparty/dist/build/lahnparty-run-worker/lahnparty-run-worker
 # This runs the Haskell executable with the given ID.
 runSubProcess ${exe} train ${id}
