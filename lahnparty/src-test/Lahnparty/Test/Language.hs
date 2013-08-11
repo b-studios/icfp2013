@@ -5,6 +5,7 @@ import Control.Applicative
 
 import Data.Word (Word64)
 import Data.Bits
+import Debug.Trace
 
 import Numeric
 
@@ -5346,6 +5347,8 @@ propDefined2 op2 inp1 inp2 =
   where
     types = (inp1 :: Word64, inp2 :: Word64)
 
+-- propDefinedE prog input = evalP
+
 -- test that evaluation is conservative
 testSoundness op2 inp1 inp2 rand1 rand2 =
   compatible
@@ -5357,15 +5360,18 @@ testSoundness op2 inp1 inp2 rand1 rand2 =
 compatible val (T bits mask) = val .&. mask == bits
 completeTristate (T bits mask) randBits = bits .&. mask .|. randBits .&. complement mask
 
+{-# NOINLINE traceShowSame #-}
+traceShowSame a = traceShow a a
+
 testPlus nBits randomMask1 randomMask2 inp1 inp2 =
-  tristateConst (filtInp1 + filtInp2) == normalizeTristate (evalOp2 Plus (T inp1 mask1) (T inp2 mask2))
+  traceShowSame (tristateConst (filtInp1 + filtInp2)) == traceShowSame (evalOp2 Plus (T inp1 undefined) (T inp2 undefined))
   where
     nthBit = (1 `shiftL` nBits)
     baseMask = nthBit - 1
     filtInp1 = inp1 .&. baseMask
     filtInp2 = inp2 .&. baseMask
     mask1 = baseMask .|. (randomMask1 .&. complement nthBit)
-    mask2 = baseMask .|. (randomMask2 .&. complement nthBit)
+    mask2 = traceShowSame $ baseMask .|. (randomMask2 .&. complement nthBit)
 
     types = (nBits :: Int, randomMask1 :: Word64, randomMask2 :: Word64, inp1 :: Word64, inp2 :: Word64)
 
