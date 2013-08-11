@@ -105,7 +105,7 @@ genericDriver eval gen probId sizes ops = do
       
       -- we should only get this error code from the proxy server
       HTTPError (4,1,2) _ -> do
-        putStrLn "Problem already solved by a different worker."
+        putStrLn "Problem is no longer active."
         return ()
 
       err -> do
