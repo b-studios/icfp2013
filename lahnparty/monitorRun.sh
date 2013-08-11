@@ -39,7 +39,7 @@ mustKill() {
 }
 
 runSubProcess() {
-  bash -c 'echo $$; exec '"$* >& output-$id.txt" | {
+  bash -c 'echo $$; exec '"$* >> output-$id.txt 2>&1" | {
   # bash -c 'echo $$; exec '"$* >&2" | {
     read pid;
     while :; do
