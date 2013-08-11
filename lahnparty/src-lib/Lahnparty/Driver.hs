@@ -41,28 +41,6 @@ handleUnexpected err = do
   putStrLn "Exiting defensively."  -- unknown error
   exitFailure
 
--- | Unexpected error, fail. This should only be used if the timer is not
---   currently running on a problem. Among other reasons, it will interpret
---   timeouts as "this program was solved earlier" and continue, instead of
---   exiting defensively.
-failUnexpected :: Show t => Response t -> Maybe ProblemID -> IO ()
-failUnexpected err pid = do
-  wasTimeout <- failOnTimeout err pid False      -- check for timeout
-  when (not wasTimeout) $ do
-    putStrLn "Exiting defensively."  -- unknown error
-    exitFailure
-
--- | Fail on a timeout, otherwise continue.
-failOnTimeout :: Show t => Response t -> Maybe ProblemID -> Bool -> IO Bool
-failOnTimeout err pid startedAlready = do
-  case err of
-    HTTPError (4,1,0) str -> do
-      handleTimeout pid startedAlready str
-      return True
-    _ -> do
-      reportUnexpected err
-      return False
-
 -- | Wait a few seconds because of a too many requests error.
 waitForRateLimit429 = do
   putStrLn "Too many requests, trying again."
@@ -116,8 +94,11 @@ genericDriver eval gen probId size ops = do
         waitForRateLimit429
         driver gen probId size ops
 
+      HTTPError (4,1,0) str -> do
+        handleTimeout (Just probId) False str
+
       err -> do
-        failUnexpected err (Just probId)
+        handleUnexpected err
 
     return ()
 
@@ -154,8 +135,11 @@ getMoreInfo pid (p:ps) = do
         waitForRateLimit429
         tryAgain
 
+      HTTPError (4,1,0) str -> do
+        handleTimeout (Just pid) True str
+
       err -> do
-        failOnTimeout err (Just pid) True
+        reportUnexpected err
         putStrLn "Timer is still running, so trying again."
         tryAgain
   
@@ -444,9 +428,9 @@ fetchTrainingData size ops = do
     HTTPError (4,2,9) _ -> do
       waitForRateLimit429
       fetchTrainingData size ops
+    -- Timeouts should not happen here, so no timeout-specific handling.
     err -> do
-      failUnexpected err Nothing
-      exitFailure
+      handleUnexpected err
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData (OK (TrainingProblem _ pid size ops)) = (pid, size, ops')
