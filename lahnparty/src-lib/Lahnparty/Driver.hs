@@ -79,9 +79,13 @@ genericDriver eval gen probId size ops = do
         let inputs' = maybe inputs id newIns
         let knowledge = buildKnowledge inputs' outputs
         
+        putStr "Generating:"
         let programs = gen size ops knowledge
+        putStrLn "(kind of) DONE!"
         debugShowPrograms "before filtering" programs
+        putStr "Filtering:"
         let programsFilt = filterProgs programs inputs' outputs
+        putStrLn "(kind of) DONE!"
         debugShowPrograms "after filtering" programsFilt
 
         getMoreInfo probId programsFilt
