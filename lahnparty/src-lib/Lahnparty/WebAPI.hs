@@ -292,7 +292,7 @@ instance JSON RegisterRequest where
 instance JSON DistProblem where
   
   readJSON (JSObject o) = do
-      pid  <- lookupReq m "workerID"
+      pid  <- lookupReq m "id"
       wnum <- lookupReq m "workerNumber"
       wtot <- lookupReq m "totalWorkers"
       return (DistProblem pid wnum wtot)
@@ -301,7 +301,7 @@ instance JSON DistProblem where
 
   showJSON (DistProblem pid wnum wtot) =
       JSObject $ toJSObject [
-        ("workerID", showJSON pid),
+        ("id", showJSON pid),
         ("workerNumber", showJSON wnum),
         ("totalWorkers", showJSON wtot)
       ]
