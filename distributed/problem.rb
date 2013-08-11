@@ -4,7 +4,7 @@ require_relative 'task.rb'
 
 class Problem
 
-  WORKERS_NEEDED = 1
+  WORKERS_NEEDED = 16
 
   attr_accessor :tasks
 
