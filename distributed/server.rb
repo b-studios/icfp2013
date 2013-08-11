@@ -203,7 +203,7 @@ eos
     halt 410 if $current_problem.failed?
     halt 412 if $current_problem.solved?
 
-    halt 412 if worker.task == nil or worker.task.problem
+    halt 412 if worker.task == nil or worker.task.problem == nil
     halt 412 if worker.task.problem.id != $current_problem.id # for sanity - already solved
   end
 
