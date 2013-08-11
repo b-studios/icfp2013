@@ -76,6 +76,7 @@ adjustForFst k _ = emptyKnowledge
 
 
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
+adjustForSnd _ (OpOp2 Plus) _ = emptyKnowledge
 adjustForSnd k op e = --old: adjustForFst k op -- #todo: partial evaluate E and use that info! --done!
                       V.map (adjustForSnd' op e) k -- #todo: delete empty KnownPoints ( where mask is 0)
 
