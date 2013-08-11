@@ -7,7 +7,6 @@ import Control.Monad (liftM3)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import Text.JSON (JSON)
-import Text.Read (readMaybe)
 
 import Lahnparty.Driver hiding (main)
 import Lahnparty.Language
