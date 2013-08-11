@@ -462,7 +462,7 @@ solveATrainProblemOfSize g ops size = do
   let (probId, size, ops) = parseTrainingData resp
 
   -- (3) Finally, try to solve the problem
-  driver GTH1.findP probId size ops
+  driver findP probId size ops
 
 solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
 solveDistTrainingProblem g wid ops size = do
