@@ -9,6 +9,7 @@ import System.Exit (exitFailure)
 import Lahnparty.Language
 import Lahnparty.WebAPI
 import qualified Lahnparty.GeneratorTH  as GTH1
+import qualified Lahnparty.GeneratorTH2 as GTH2
 import Lahnparty.GeneratorTH2
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
@@ -67,8 +68,9 @@ genericDriver eval gen probId size ops = do
     
     let inputs = randomInputs
 
-    putStrLn "Sending eval request:"
+    putStr "Sending eval request: "
     result <- eval probId inputs
+    putStrLn "DONE!"
 
     case result of
 
@@ -77,9 +79,13 @@ genericDriver eval gen probId size ops = do
         let inputs' = maybe inputs id newIns
         let knowledge = buildKnowledge inputs' outputs
         
+        putStr "Generating:"
         let programs = gen size ops knowledge
+        putStrLn "(kind of) DONE!"
         debugShowPrograms "before filtering" programs
+        putStr "Filtering:"
         let programsFilt = filterProgs programs inputs' outputs
+        putStrLn "(kind of) DONE!"
         debugShowPrograms "after filtering" programsFilt
 
         getMoreInfo probId programsFilt
@@ -455,7 +461,7 @@ rangeSizeStart = 16
 rangeSizeEnd = 20
 nProblemsForSize = 3
 
-main = solveTrainProblemsOfSizeFromTo GTH1.findP TrainNone rangeSizeStart rangeSizeEnd
+main = solveTrainProblemsOfSizeFromTo GTH2.findP TrainNone rangeSizeStart rangeSizeEnd
 
 solveTrainProblemsOfSizeFromTo :: Generator -> TrainOps -> Int -> Int -> IO ()
 solveTrainProblemsOfSizeFromTo g ops from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize ops) [from .. to]
@@ -483,4 +489,4 @@ solveATrainProblemOfSize g ops size = do
   let (probId, size, ops) = parseTrainingData resp
 
   -- (3) Finally, try to solve the problem
-  driver GTH1.findP probId size ops
+  driver g probId size ops
