@@ -6,6 +6,7 @@ pingInterval=5
 
 id=$1
 
+
 # Ensure that Ctrl-C kills the shell, instead of letting it self-restart.
 trap "exit 1" EXIT INT
 
@@ -20,7 +21,7 @@ getErrorCode() {
 }
 
 mustKill() {
-  mustKillUrl="${baseUrl}stay-alive/${id}"
+  mustKillUrl="${baseUrl}stay_alive/${id}"
   code=$(getErrorCode "$mustKillUrl")
   if [ "$code" = 200 ]; then
     # Do nothing
