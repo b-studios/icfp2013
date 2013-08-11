@@ -90,28 +90,52 @@ adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
                                                    hasCarryMask   = (complement r) .&. v1
                                                    hasNoCarryMask = r .&. (complement v1)
                                                    carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
-                                                   carry = shiftL (hasCarryMask .|. (complement hasNoCarryMask)) 1
+                                                   carry = shiftL hasCarryMask 1
                                                in Know (m .&. m1) a (v1 `xor` r)
 
 computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
 computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
   = let knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
-        knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
+        -- knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
+        knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
+
         knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
         knowCRNewCarryMask  = (carryMask `xor`resMask)
         knowCRNewCarryVal   = carryVal
+
         knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
         knowVRNewCarryMask  = (v1Mask `xor` resMask)
-        knowVRNewCarryVal   = v1Mask
+        knowVRNewCarryVal   = v1Val
+
         knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
-        knowVCNewCarryMask  = (v1Mask .&. carryMask)
-        knowVCNewCarryVal   = v1Mask
-        carryMask' = shiftL (knowAllMask .|. knowCRMask .|. knowVRMask .|. knowVCMask) 1
-        carryVal'  = shiftL (knowAllNewCarryVal 
+        knowVCNewCarryMask  = complement (v1Mask `xor` carryMask)
+        knowVCNewCarryVal   = v1Val
+
+        doMask mask val = (mask, mask .&. val)
+
+        -- This is slow (?) inline everything again!
+        valMasks =
+          [ doMask knowAllMask knowAllNewCarryVal
+          , doMask (knowCRMask .&. knowCRNewCarryMask) knowCRNewCarryVal
+          , doMask (knowVRMask .&. knowVRNewCarryMask) knowVRNewCarryVal
+          , doMask (knowVCMask .&. knowVCNewCarryMask) knowVCNewCarryVal
+          ]
+        carryMask' = shiftL (foldr1 (.|.) (map fst valMasks)) 1
+        carryVal'  = shiftL (foldr1 (.|.) (map snd valMasks)) 1
+
+{-
+        carryMask' = shiftL (knowAllMask
+                             .|. (knowCRMask .&. knowCRNewCarryMask)
+                             .|. (knowVRMask .&. knowVRNewCarryMask)
+                             .|. (knowVCMask .&. knowVCNewCarryMask)) 1
+-- XXX Mask off parts with their individual masks
+        carryVal'  = shiftL (knowAllNewCarryVal
                              .|. knowCRNewCarryVal 
                              .|. knowVRNewCarryVal
                              .|. knowVCNewCarryVal) 1
-    in if carryVal == carryVal'
+-}
+--    in if carryVal == carryVal'
+    in if carryMask == carryMask'
       then carry
       else computeCarry v1 (Know carryMask' 0 carryVal') res
 
