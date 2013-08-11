@@ -97,20 +97,12 @@ data DistTrainingProblem = DistTrainingProblem TrainingProblem Int Int
   deriving (Eq,Show)
 
 -- | Register as a worker.
-registerWorker :: WorkerID -> IO (Response DistProblem)
+registerWorker :: JSON a => WorkerID -> IO (Response a)
 registerWorker = performRequest "register" . RegisterRequest
 
 -- | Send an evaluation request as a distributed worker.
 distEvalRequest :: WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
 distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid vs)
-
--- | Send a training request as a distributed worker.
-distTrainRequest :: WorkerID -> Size -> TrainOps -> IO (Response DistTrainingProblem)
-distTrainRequest wid n fold =
-    performRequest "register" (DistTrainRequest wid (TrainRequest (Just n) (Just ops)))
-  where ops = case fold of TrainNone  -> []
-                           TrainFold  -> ["fold"]
-                           TrainTFold -> ["tfold"]
 
 
 --
@@ -304,24 +296,6 @@ instance JSON DistProblem where
         ("workerNumber", showJSON wnum),
         ("totalWorkers", showJSON wtot)
       ]
-
-
-data DistTrainRequest = DistTrainRequest WorkerID TrainRequest
-  deriving (Eq,Show)
-  
-instance JSON DistTrainRequest where
-  
-  readJSON (JSObject o) = do
-      wid <- lookupReq m "workerID"
-      req <- readJSON (JSObject o)
-      return (DistTrainRequest wid req)
-    where m = fromJSObject o
-  readJSON _ = Error "Error reading DistTrainRequest (not JSObject)."
-
-  showJSON (DistTrainRequest wid req) =
-      JSObject $ toJSObject $
-      fromJSObject reqObj ++ [("workerID", showJSON wid)]
-    where (JSObject reqObj) = showJSON req
 
 
 instance JSON DistTrainingProblem where

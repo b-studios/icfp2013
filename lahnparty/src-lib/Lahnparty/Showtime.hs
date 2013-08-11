@@ -34,4 +34,4 @@ solveProblemsOfSizeFiltered g p n = solveProblems g (filter p (sizeToIDs n))
 solveProblemsInRange :: Generator -> Int -> Int -> IO ()
 solveProblemsInRange g from to = mapM_ (solveProblemsOfSize g) [from .. to]
 
-main = mapM_ (solveProblemsOfSizeFiltered findP hasNoFold) [11 .. 17]
+main = mapM_ (solveProblemsOfSizeFiltered findP hasNoFold) [3]

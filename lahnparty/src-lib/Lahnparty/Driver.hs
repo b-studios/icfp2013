@@ -16,25 +16,30 @@ import Lahnparty.Types
 -- XXX disable in production, it changes memory usage
 expensiveDebug = False
 
--- | Unexpected error, fail. This should only be used if the timer is not
---   currently running on a problem.
-failUnexpected :: Show t => Response t -> Maybe ProblemID -> IO a
-failUnexpected err pid = do
-  failOnTimeout err pid            -- check for timeout
+-- XXX disable in the last rush, when we should try as much as we can and
+-- continue even after failures.
+exitWhenFailing = True
+
+-- | Handle a timeout, and decide whether to exit. startedAlready tells us if we
+--   already started the timer on this problem with a previous request, in which
+--   case a timeout is our fault and we should exit defensively. Otherwise, a
+--   timeout means "this program was solved earlier".
+handleTimeout :: Maybe ProblemID -> Bool -> String -> IO ()
+handleTimeout pid startedAlready str = do
+  putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
+  putStrLn $ "Error message: " ++ str
+  when (startedAlready && exitWhenFailing)
+    exitFailure
+
+reportUnexpected err =
+  putStrLn $ "Unknown error: " ++ show err
+
+-- | Unexpected error, fail and exit (after creating debug output). This should
+--   only be used if the timer is not currently running on a problem.
+handleUnexpected err = do
+  reportUnexpected err
   putStrLn "Exiting defensively."  -- unknown error
   exitFailure
-
--- | Fail on a timeout, otherwise continue.
-failOnTimeout :: Show t => Response t -> Maybe ProblemID -> IO ()
-failOnTimeout err pid = do
-  case err of
-    HTTPError (4,1,0) str -> do
-      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
-      putStrLn $ "Error message: " ++ str
-      exitFailure
-    _ -> do
-      putStrLn $ "Unknown error: " ++ show err
-      return ()
 
 -- | Wait a few seconds because of a too many requests error.
 waitForRateLimit429 = do
@@ -79,14 +84,21 @@ genericDriver eval gen probId size ops = do
 
         getMoreInfo probId programsFilt
 
+      -- we should only get this error code from the proxy server
+      HTTPError (4,2,0) _ -> do
+        putStrLn "Waiting for more workers ..."
+        threadDelay 3000000 -- 3 seconds
+        driver gen probId size ops
+
       HTTPError (4,2,9) _ -> do
         waitForRateLimit429
         driver gen probId size ops
 
+      HTTPError (4,1,0) str -> do
+        handleTimeout (Just probId) False str
+
       err -> do
-        failOnTimeout err (Just probId)
-        putStrLn "Exiting defensively."
-        exitFailure
+        handleUnexpected err
 
     return ()
 
@@ -114,12 +126,20 @@ getMoreInfo pid (p:ps) = do
           putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
         getMoreInfo pid programsFilt
 
+      -- we should only get this error code from the proxy server
+      HTTPError (4,1,2) _ -> do
+        putStrLn "Problem already solved by a different worker."
+        return ()
+
       HTTPError (4,2,9) _ -> do
         waitForRateLimit429
         tryAgain
 
+      HTTPError (4,1,0) str -> do
+        handleTimeout (Just pid) True str
+
       err -> do
-        failOnTimeout err (Just pid)
+        reportUnexpected err
         putStrLn "Timer is still running, so trying again."
         tryAgain
   
@@ -408,8 +428,9 @@ fetchTrainingData size ops = do
     HTTPError (4,2,9) _ -> do
       waitForRateLimit429
       fetchTrainingData size ops
+    -- Timeouts should not happen here, so no timeout-specific handling.
     err -> do
-      failUnexpected err Nothing
+      handleUnexpected err
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData (OK (TrainingProblem _ pid size ops)) = (pid, size, ops')
@@ -463,16 +484,3 @@ solveATrainProblemOfSize g ops size = do
 
   -- (3) Finally, try to solve the problem
   driver findP probId size ops
-
-solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
-solveDistTrainingProblem g wid ops size = do
-    resp <- distTrainRequest wid size ops
-    print resp
-    case resp of
-      OK (DistTrainingProblem prob wnum wtot) -> do
-        putStrLn $ "Problem: " ++ show prob
-        putStrLn $ "Worker Number: " ++ show wnum
-        putStrLn $ "Total Workers: " ++ show wtot
-        let (pid,size,ops) = parseTrainingData (OK prob)
-        distDriver wid GTH1.findP pid size ops
-      _ -> error "Boom."
