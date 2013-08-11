@@ -1,7 +1,6 @@
 require 'rubygems'
 
 require 'sinatra'
-require 'sinatra/async'
 require 'sinatra/base'
 
 require 'json'
@@ -13,15 +12,43 @@ require_relative 'problem.rb'
 
 
 class Server < Sinatra::Base
+  #####
+  # You might want to configure this:
+  #####
+
+  $worker_limit = 1
+
+  def get_problem
+
+    # production one
+
+    # => maybe sqlite, or by hand
+
+    # test one
+=begin
+Problem.new({
+  "id" => "pGRnFfwszdPRNzzDQAJxw16h",
+  "size" => 12,
+  "operators" => ["and","if0","or","shr4","xor"],
+  "challenge" => "(lambda (x_12795) (xor (if0 (or (and (shr4 0) x_12795) x_12795) x_12795 1) x_12795))"
+})
+=end
+
+    Problem.new(request_train)
+    
+  end
+  #####
+  # You don't need to configure what's below.
+  #####
 
   # Server
 
   $available_workers = []
 
-  $worker_limit = 2
-
   # problem that is currently being worked on
   $current_problem = nil
+
+  $old_problems = []
 
   $workers = []
 
@@ -31,6 +58,8 @@ class Server < Sinatra::Base
   <pre>#{$workers}</pre>
   <h2>Current problem:</h2>
   <pre>#{$current_problem}</pre>
+  <h2>Old problems:</h2>
+  <ul>#{ $old_problems.map {|p| "<li><pre>#{p}</pre></li>" }.join("\n") }</ul>
 eos
   end
 
@@ -38,19 +67,21 @@ eos
   post '/register' do
     content_type :json
 
-    # we have enough workers, sorry :)
-    if $workers.size >= $worker_limit
-      halt 429
-    end
-
-    $current_problem = get_problem if $current_problem == nil
-
     train_request = JSON.parse request.body.read
     id = train_request["workerID"]
 
     puts "Worker #{id} is registering"
 
     worker = find_worker(id)
+
+    return worker.job.to_json if worker != nil
+
+    # we have enough workers, sorry :)
+    if $workers.size >= $worker_limit
+      halt 423
+    end
+
+    $current_problem = get_problem if $current_problem == nil
 
     if worker == nil
       job = $current_problem.split($worker_limit, $workers.size)
@@ -66,7 +97,7 @@ eos
 
     # wait until all clients registered
     if $workers.size < $worker_limit
-      halt 429
+      halt 420
     end
 
     eval_request = JSON.parse request.body.read
@@ -79,8 +110,11 @@ eos
     data = nil
 
     # TODO other error code?
-    if $current_problem == nil or worker == nil
-      halt 404
+    if $current_problem == nil
+      halt 412
+
+    elsif worker == nil
+      halt 412
 
     # already solved
     elsif id != $current_problem.id
@@ -127,6 +161,7 @@ eos
       if result['status'] == "win"
         puts "We won! #{guess["id"]} #{guess["program"]}"
         $workers = []
+        $old_problems << $current_problem
         $current_problem = nil
       else
 
@@ -146,23 +181,6 @@ eos
 
   # communication with the real server
 
-  def get_problem
-
-    # production one
-
-    # test one
-=begin
-{
-      "id" => "9PIpu5iWYnSSPnO8wklvBPV7",
-      "size" => 26,
-      "operators" => ["and", "fold", "if0", "not", "or", "plus", "shr16", "shr4", "xor"],
-      "challenge" => "(lambda (x_67997) (fold x_67997 (shr4 (xor (and (not (or x_67997 0)) (not (if0 (plus (xor x_67997 (shr16 x_67997)) 1) x_67997 1))) x_67997)) (lambda (x_67998 x_67999) (shr4 (plus x_67998 x_67999)))))"
-    }
-=end
-
-    Problem.new(request_train)
-  end
-
   def request_guess(id, program)
     resp = perform_request('guess', {
       id: id,
@@ -174,7 +192,7 @@ eos
 
     else
       puts data["message"]
-      halt 429
+      halt resp.code.to_i
     end
   end
 
@@ -200,7 +218,7 @@ eos
       # TODO not sure with this
       else
         puts data["message"]
-        halt 429
+        halt 400
       end
 
 

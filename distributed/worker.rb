@@ -9,7 +9,7 @@ class Worker
   end
 
   def to_s
-    "Worker #{@id} "
+    "Worker id:#{@id} calls_to_eval:#{@calls_to_eval}"
   end
 
   def called_eval!

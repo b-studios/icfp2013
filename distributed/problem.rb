@@ -47,7 +47,7 @@ class Problem
   end
 
   def to_s
-    "Problem #{@problem_desc["id"]}"
+    "Problem #{@problem_desc["id"]} data-points:#{@data_points}"
   end
 
 end
