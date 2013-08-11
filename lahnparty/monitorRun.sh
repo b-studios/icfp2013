@@ -28,6 +28,10 @@ mustKill() {
   elif [ "$code" = 410 ]; then
     # Kill
     echo 1
+  elif [ "$code" = 000 ]; then
+    echo ">>>> Server not running! Exiting." >&2
+    # Kill && exit.
+    echo 2
   else
     # Kill anyway
     echo 1
@@ -41,8 +45,9 @@ runSubProcess() {
     while :; do
       sleep ${pingInterval}
       res=$(mustKill)
-      [ "${res}" -eq 1 ] && { kill $pid; break; }
+      [ "${res}" -eq 1 -o "${res}" -eq 2 ] && { kill $pid; break; }
     done
+    [ "${res}" -eq 2 ] && exit 2
     exec ./$(basename "$0") $id
   }
 }
