@@ -22,6 +22,7 @@ library
                        Lahnparty.TristateEval,
                        Lahnparty.Generator1,
                        Lahnparty.Generator2,
+                       Lahnparty.GeneratorBonus42,
                        Lahnparty.GeneratorTH,
                        Lahnparty.GeneratorTH2,
                        Lahnparty.WebAPI,
