@@ -26,10 +26,6 @@ isOp3 OpIf0 = True
 isOp3 OpFold = True
 isOp3 _ = False
 
-isShift :: Op1 -> Bool
-isShift Not = False
-isShift _ = True
-
 arity :: Op -> Int
 arity (OpOp1 _) = 1
 arity (OpOp2 _) = 2

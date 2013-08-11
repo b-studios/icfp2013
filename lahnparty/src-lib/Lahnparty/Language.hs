@@ -29,6 +29,10 @@ data E
   | Op2 !Op2 !E !E
     deriving (Eq, Ord)
 
+isShift :: Op1 -> Bool
+isShift Not = False
+isShift _ = True
+
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
     deriving (Eq, Ord, Enum, Bounded)
 
