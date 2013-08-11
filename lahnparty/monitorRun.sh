@@ -1,7 +1,7 @@
 #!/bin/bash -v -x
 
 baseUrl="http://plse.informatik.uni-marburg.de:8888/"
-id=?
+id=$1
 
 getErrorCode() {
   url="$1"
@@ -39,5 +39,5 @@ runSubProcess() {
 }
 
 exe=./dist/build/lahnparty-run-worker/lahnparty-run-worker
-# This runs the 
-runSubProcess ${exe} train new 1
+# This runs the Haskell executable with the given ID.
+runSubProcess ${exe} train ${id}
