@@ -41,6 +41,7 @@ runSubProcess() {
       [ "$(mustKill)" -eq 1 ] && { kill $pid; return; }
     done
   }
+  exec ./$(basename "$0") $id
 }
 
 cd "$(dirname "$0")"
