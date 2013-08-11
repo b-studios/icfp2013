@@ -19,7 +19,7 @@ class Server < Sinatra::Base
     @real_problems = request_problems.select { |p| ! (p["solved"] == true) }.sort { |a, b|
       a["size"] - b["size"]
     }.select {|prob| 
-      prob["size"] <= 15 and not prob["operators"].include?("fold")
+      prob["size"] <= 20 and not prob["operators"].include?("fold")
     }
   end
 
