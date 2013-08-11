@@ -79,6 +79,12 @@ genericDriver eval gen probId size ops = do
 
         getMoreInfo probId programsFilt
 
+      -- we should only get this error code from the proxy server
+      HTTPError (4,2,0) _ -> do
+        putStrLn "Waiting for more workers ..."
+        threadDelay 3000000 -- 3 seconds
+        driver gen probId size ops
+
       HTTPError (4,2,9) _ -> do
         waitForRateLimit429
         driver gen probId size ops
@@ -113,6 +119,11 @@ getMoreInfo pid (p:ps) = do
         when expensiveDebug $ do
           putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
         getMoreInfo pid programsFilt
+
+      -- we should only get this error code from the proxy server
+      HTTPError (4,1,2) _ -> do
+        putStrLn "Problem already solved by a different worker."
+        return ()
 
       HTTPError (4,2,9) _ -> do
         waitForRateLimit429
@@ -463,16 +474,3 @@ solveATrainProblemOfSize g ops size = do
 
   -- (3) Finally, try to solve the problem
   driver GTH1.findP probId size ops
-
-solveDistTrainingProblem :: Generator -> WorkerID -> TrainOps -> Size -> IO ()
-solveDistTrainingProblem g wid ops size = do
-    resp <- distTrainRequest wid size ops
-    print resp
-    case resp of
-      OK (DistTrainingProblem prob wnum wtot) -> do
-        putStrLn $ "Problem: " ++ show prob
-        putStrLn $ "Worker Number: " ++ show wnum
-        putStrLn $ "Total Workers: " ++ show wtot
-        let (pid,size,ops) = parseTrainingData (OK prob)
-        distDriver wid GTH1.findP pid size ops
-      _ -> error "Boom."
