@@ -165,6 +165,7 @@ adjustForIf0Else k e = V.filter shouldKeep k
                                 in ((mask .&. condVal) /= 0)
 
 
+{-# SPECIALIZE evalEGen ::  TristateWord -> TristateWord -> TristateWord -> E -> TristateWord #-}
 
 
 evalPart :: E -> KnownPoint -> KnownPoint
