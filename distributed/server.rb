@@ -40,8 +40,8 @@ class Server < Sinatra::Base
   <h2>Current problem:</h2>
   <pre>#{$current_problem}</pre>
   <h2>Old problems:</h2>
-  <ul>#{ $old_problems.reverse.map {|p| "<li><pre>#{p.id} #{p.size}</pre></li>" }.join("\n") }</ul>
-  <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 1500) }</script>
+  <ul>#{ $old_problems.reverse.map {|p| "<li><pre>#{p.id} #{p.size} #{p.status}</pre></li>" }.join("\n") }</ul>
+  <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 3000) }</script>
 eos
   end
 
@@ -230,7 +230,7 @@ eos
 
     # production one
     if PRODUCTION
-      prob = @real_problems.unshift
+      prob = @real_problems.shift
       halt 404 if prob == nil
 
       Problem.new(prob)
