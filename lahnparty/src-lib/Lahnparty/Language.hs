@@ -19,7 +19,8 @@ data P
     deriving Eq
 
 data E
-  = Zero
+  = Hole
+  | Zero
   | One
   | Id !Id
   | If0 !E !E !E
@@ -29,10 +30,10 @@ data E
     deriving (Eq, Ord)
 
 data Op1 = Not | Shl1 | Shr1 | Shr4 | Shr16
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Enum, Bounded)
 
 data Op2 = And | Or | Xor | Plus
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Enum, Bounded)
 
 data Op
   = OpOp1 !Op1
@@ -61,47 +62,82 @@ sizeE (Op2 _ e1 e2) = 1 + sizeE e1 + sizeE e2
 -- | Evaluate programs.
 
 evalP :: Word64 -> P -> Word64
-evalP input (Lambda e) =
-  evalE input (error "not in fold") (error "not in fold") e
+evalP = evalPGen
 
 -- | Evaluate expressions.
 
+-- Specialized version, with current interface.
 evalE :: Word64 -> Word64 -> Word64 -> E -> Word64
-evalE input byte acc Zero = 0
-evalE input byte acc One = 1
-evalE input byte acc (Id Input) = input
-evalE input byte acc (Id Byte) = byte
-evalE input byte acc (Id Acc) = acc
-evalE input byte acc (If0 e1 e2 e3) =
-  if evalE input byte acc e1 == 0
-    then evalE input byte acc e2
-    else evalE input byte acc e3
-evalE input byte acc (Fold e0 e1 e2) = foldr f initial values
+evalE = evalEGen
+
+evalPGen :: ProgData t => t -> P -> t
+evalPGen input (Lambda e) =
+  evalEGen input (error "not in fold") (error "not in fold") e
+
+-- General version, soon with polymorphic interface.
+evalEGen :: ProgData t => t -> t -> t -> E -> t
+evalEGen input byte acc Hole = evalHole
+evalEGen input byte acc Zero = zero
+evalEGen input byte acc One = one
+evalEGen input byte acc (Id Input) = input
+evalEGen input byte acc (Id Byte) = byte
+evalEGen input byte acc (Id Acc) = acc
+evalEGen input byte acc (If0 e1 e2 e3) =
+    evalIf (evalEGen input byte acc e1)
+      (evalEGen input byte acc e2)
+      (evalEGen input byte acc e3)
+
+evalEGen input byte acc (Fold e0 e1 e2) = foldr f initial values
   where
-    values = listOfFoldedValues (evalE input byte acc e0)
-    initial = evalE input byte acc e1
-    f x y = evalE input x y e2
-evalE input byte acc (Op1 op1 e1) =
-  evalOp1 op1 (evalE input byte acc e1)
-evalE input byte acc (Op2 op2 e1 e2) =
-  evalOp2 op2 (evalE input byte acc e1) (evalE input byte acc e2)
+    values = listOfFoldedValues doShift (evalEGen input byte acc e0)
+    initial = evalEGen input byte acc e1
+    f x y = evalEGen input x y e2
+evalEGen input byte acc (Op1 op1 e1) =
+  evalOp1 op1 (evalEGen input byte acc e1)
+evalEGen input byte acc (Op2 op2 e1 e2) =
+  evalOp2 op2 (evalEGen input byte acc e1) (evalEGen input byte acc e2)
 
-evalOp1 :: Op1 -> Word64 -> Word64
-evalOp1 Not = complement
-evalOp1 Shl1 = (`shiftL` 1)
-evalOp1 Shr1 = (`shiftR` 1)
-evalOp1 Shr4 = (`shiftR` 4)
-evalOp1 Shr16 = (`shiftR` 16)
 
-evalOp2 :: Op2 -> Word64 -> Word64 -> Word64
-evalOp2 And = (.&.)
-evalOp2 Or = (.|.)
-evalOp2 Xor = xor
-evalOp2 Plus = (+)
+class ProgData t where
+  evalHole :: t
+  zero :: t
+  one :: t
+  evalOp1 :: Op1 -> t -> t
+  evalOp2 :: Op2 -> t -> t -> t
+  evalIf :: t -> t -> t -> t
+  doShift :: (Word64 -> Word64) -> (t -> t)
 
-listOfFoldedValues :: Word64 -> [Word64]
-listOfFoldedValues =
-  take 8 . map (`shiftR` 56) . iterate (`shiftL` 8)
+instance ProgData Word64 where
+  evalHole = error "evalHole :: Word64"
+  zero = 0
+  one = 1
+
+  evalIf v1 v2 v3 =
+    if v1 == 0
+      then v2
+      else v3
+
+  evalOp1 Not = complement
+  evalOp1 Shl1 = (`shiftL` 1)
+  evalOp1 Shr1 = (`shiftR` 1)
+  evalOp1 Shr4 = (`shiftR` 4)
+  evalOp1 Shr16 = (`shiftR` 16)
+
+  evalOp2 And = (.&.)
+  evalOp2 Or = (.|.)
+  evalOp2 Xor = xor
+  evalOp2 Plus = (+)
+
+  doShift = id
+
+shiftAmount Shl1 = -1
+shiftAmount Shr1  = 1
+shiftAmount Shr4  = 4
+shiftAmount Shr16 = 16
+shiftAmount Not = error "shiftAmount Not"
+
+listOfFoldedValues doShift =
+  take 8 . map (doShift (`shiftR` 56)) . iterate (doShift (`shiftL` 8))
 
 --
 -- * Pretty printer

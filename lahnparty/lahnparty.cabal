@@ -18,9 +18,11 @@ library
   ghc-options:         -O2
   hs-source-dirs:      src-lib
   exposed-modules:     Lahnparty.Language,
+                       Lahnparty.TristateEval,
                        Lahnparty.Generator1,
                        Lahnparty.Generator2,
                        Lahnparty.GeneratorTH,
+                       Lahnparty.GeneratorTH2,
                        Lahnparty.WebAPI,
                        Lahnparty.ProblemsDB,
                        Lahnparty.Driver,
@@ -28,7 +30,7 @@ library
                        Lahnparty.Retry,
                        Lahnparty.Types
 
-  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers
+  build-depends:       base >= 4.5, HTTP, json, QuickCheck, random, random-source, mtl, containers, vector
 
 executable lahnparty-solver-real
   ghc-options:         -O2
@@ -51,6 +53,14 @@ executable lahnparty-measure
   build-depends:       lahnparty,
                        base >= 4.5
 
+executable lahnparty-measure2
+  ghc-options:         -O2
+  hs-source-dirs:      src-exec
+  main-is:             measure2.hs
+  build-depends:       lahnparty,
+                       vector,
+                       base >= 4.5
+
 test-suite lahnparty-tests
   Type:                exitcode-stdio-1.0
   Hs-source-dirs:      src-test
@@ -59,7 +69,9 @@ test-suite lahnparty-tests
                        base >=4.5,
                        test-framework,
                        test-framework-hunit,
-                       HUnit
+                       test-framework-quickcheck2,
+                       HUnit,
+                       QuickCheck
 
 executable lahnparty-web-tests
   Hs-source-dirs:      src-test

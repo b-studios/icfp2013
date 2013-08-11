@@ -10,7 +10,7 @@ module Lahnparty.Showtime where
 import Control.Concurrent (threadDelay)
 
 import Lahnparty.Driver
-import Lahnparty.GeneratorTH
+import Lahnparty.GeneratorTH2
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
 
