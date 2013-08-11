@@ -218,8 +218,8 @@ instance Ord SizedE where
 --   (It must still be present in the  oplist).
 findE :: Size -> [Op] -> InFold -> MustFold -> Knowledge -> [E]
 findE 1 _   _      True _     = []
-findE 1 _   False  _    known = filter (isValidConst known) [Id Input, One, Zero]
-findE 1 _   True   _    known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
+findE 1 _   False  _    !known = filter (isValidConst known) [Id Input, One, Zero]
+findE 1 _   True   _    !known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True _     = []
 
 findE n@2 ops infold _ !known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
