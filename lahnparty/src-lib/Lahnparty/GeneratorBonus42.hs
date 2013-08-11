@@ -9,6 +9,9 @@ import Lahnparty.GeneratorTH2 (Generator)
 findP :: Generator
 findP size ops knowledge = hardCoded -- ++ Lahnparty.GeneratorTH.findP size ops knowledge
 
+addHardcoded :: Generator -> Generator
+addHardcoded g size ops knowledge = hardCoded ++ g size ops knowledge
+
 hardCoded =
           [ (Lambda (If0 (Op2 And (Op2 And (Op1 Not (Op1 Shr1 (Id Input))) (Op1 Shr16 (Op1 Not Zero))) One) (Op2 Xor (Op2 Plus One (Id Input)) One) (Op2 Or (Op2 Plus (Id Input) (Op1 Not (Op1 Shr16 (Id Input)))) (Id Input))))
           , (Lambda (If0 (Op2 And (Op2 And (Op1 Shr1 (Op1 Not (Id Input))) (Id Input)) One) (Op2 And (Id Input) (Op2 Plus (Id Input) One)) (Op2 And (Op1 Shr4 (Id Input)) (Op2 Plus (Op1 Not (Id Input)) (Op1 Not Zero)))))

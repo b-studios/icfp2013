@@ -18,6 +18,7 @@ import Lahnparty.WebAPI
 
 import qualified Lahnparty.GeneratorTH  as OldGen
 import qualified Lahnparty.GeneratorTH2 as NewGen
+import qualified Lahnparty.GeneratorBonus42  as BonusGen
 import Lahnparty.GeneratorTH2 (Generator)
 
 --
@@ -58,7 +59,7 @@ runWorker work wid = do
         let Work pid size ops wnum wtot = work result
         let (gen, wnum', wtot') = chooseGenerator size wnum wtot
         let sizes = chooseSizeRange size wnum' wtot'
-        distDriver wid gen pid sizes ops
+        distDriver wid ((if wnum == 1 then BonusGen.addHardcoded else id) gen) pid sizes ops
         sleepThenTryAgain 3
       
       HTTPError (4,2,3) msg -> do
