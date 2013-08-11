@@ -24,7 +24,7 @@ class Worker
   end
 
   def kill?
-    timeout? or not @task.problem.running?
+    @task.problem.running?
   end
 
   def assign_task(task)
