@@ -40,10 +40,11 @@ runSubProcess() {
     read pid;
     while :; do
       sleep ${pingInterval}
-      [ "$(mustKill)" -eq 1 ] && { kill $pid; return; }
+      res=$(mustKill)
+      [ "${res}" -eq 1 ] && { kill $pid; break; }
     done
+    exec ./$(basename "$0") $id
   }
-  exec ./$(basename "$0") $id
 }
 
 cd "$(dirname "$0")"
