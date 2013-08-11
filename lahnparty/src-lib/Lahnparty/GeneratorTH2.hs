@@ -95,8 +95,8 @@ adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let p1 @ (Know m1 _ v1) = evalPar
                                                    carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
                                                    carryVal = shiftL hasCarryMask 1
                                                    finalCarry =
-                                                     Know carryMask 0 carryVal
-                                                     -- computeCarry p1 (Know carryMask 0 carryVal) p
+                                                     -- Know carryMask 0 carryVal
+                                                     computeCarry p1 (Know carryMask 0 carryVal) p
                                                in computeV2 p1 finalCarry p
 
 computeV2 :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
@@ -147,8 +147,8 @@ computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Kno
           , doMask (knowVRMask .&. knowVRNewCarryMask) knowVRNewCarryVal
           , doMask (knowVCMask .&. knowVCNewCarryMask) knowVCNewCarryVal
           ]
-        carryMask' = shiftL (foldr1 (.|.) (map fst valMasks)) 1
-        carryVal'  = shiftL (foldr1 (.|.) (map snd valMasks)) 1
+        carryMask' = shiftL (foldr1 (.|.) (map fst valMasks)) 1 .|. carryMask
+        carryVal'  = shiftL (foldr1 (.|.) (map snd valMasks)) 1 .|. carryVal
 
 {-
         carryMask' = shiftL (knowAllMask
