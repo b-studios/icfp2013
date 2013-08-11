@@ -6,6 +6,8 @@ pingInterval=20
 
 id=$1
 
+# Ensure that Ctrl-C kills the shell, instead of letting it self-restart.
+trap "exit 1" EXIT INT
 
 getErrorCode() {
   url="$1"
