@@ -90,9 +90,7 @@ genericDriver eval gen probId size ops = do
         driver gen probId size ops
 
       err -> do
-        failOnTimeout err (Just probId)
-        putStrLn "Exiting defensively."
-        exitFailure
+        failUnexpected err (Just probId)
 
     return ()
 
