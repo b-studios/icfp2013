@@ -72,7 +72,7 @@ shiftKnowL n (Know m a r) = Know (shiftL m n) a (shiftL r n)
 adjustForFst :: Knowledge -> Op -> Knowledge
 adjustForFst k (OpOp2 And) = V.map (\(Know m a r) -> Know (m .&. r) a (m .&. r)) k
 adjustForFst k (OpOp2 Or)  = V.map (\(Know m a r) -> Know (m .&. (complement r)) a 0) k
-adjustForFst k _ = k
+adjustForFst k _ = emptyKnowledge
 
 
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
