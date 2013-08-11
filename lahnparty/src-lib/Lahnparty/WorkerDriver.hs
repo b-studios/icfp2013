@@ -90,7 +90,8 @@ main = do
     readGen "new"   = return NewGen.findP
     readGen _ = usage
     
-    readID = maybe usage return . readMaybe
+    -- readID = maybe usage return . readMaybe
+    readID = return . read
     
     usage = do 
       putStrLn "lahnparty-run-worker {live|train} {old|new} wid"
