@@ -2,7 +2,7 @@
 
 baseUrl="http://plse.informatik.uni-marburg.de:8888/"
 # In seconds
-pingInterval=20
+pingInterval=5
 
 id=$1
 
