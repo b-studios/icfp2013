@@ -16,25 +16,34 @@ import Lahnparty.Types
 -- XXX disable in production, it changes memory usage
 expensiveDebug = False
 
+-- XXX disable in the last rush, when we should try as much as we can and
+-- continue even after failures.
+exitWhenFailing = True
+
 -- | Unexpected error, fail. This should only be used if the timer is not
---   currently running on a problem.
-failUnexpected :: Show t => Response t -> Maybe ProblemID -> IO a
+--   currently running on a problem. Among other reasons, it will interpret
+--   timeouts as "this program was solved earlier" and continue, instead of
+--   exiting defensively.
+failUnexpected :: Show t => Response t -> Maybe ProblemID -> IO ()
 failUnexpected err pid = do
-  failOnTimeout err pid            -- check for timeout
-  putStrLn "Exiting defensively."  -- unknown error
-  exitFailure
+  wasTimeout <- failOnTimeout err pid False      -- check for timeout
+  when (not wasTimeout) $ do
+    putStrLn "Exiting defensively."  -- unknown error
+    exitFailure
 
 -- | Fail on a timeout, otherwise continue.
-failOnTimeout :: Show t => Response t -> Maybe ProblemID -> IO ()
-failOnTimeout err pid = do
+failOnTimeout :: Show t => Response t -> Maybe ProblemID -> Bool -> IO Bool
+failOnTimeout err pid startedAlready = do
   case err of
     HTTPError (4,1,0) str -> do
       putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
       putStrLn $ "Error message: " ++ str
-      exitFailure
+      when (startedAlready && exitWhenFailing)
+         exitFailure
+      return True
     _ -> do
       putStrLn $ "Unknown error: " ++ show err
-      return ()
+      return False
 
 -- | Wait a few seconds because of a too many requests error.
 waitForRateLimit429 = do
@@ -128,7 +137,7 @@ getMoreInfo pid (p:ps) = do
         tryAgain
 
       err -> do
-        failOnTimeout err (Just pid)
+        failOnTimeout err (Just pid) True
         putStrLn "Timer is still running, so trying again."
         tryAgain
   
@@ -419,6 +428,7 @@ fetchTrainingData size ops = do
       fetchTrainingData size ops
     err -> do
       failUnexpected err Nothing
+      exitFailure
 
 parseTrainingData :: Response TrainingProblem -> (ProblemID, Size, [Op])
 parseTrainingData (OK (TrainingProblem _ pid size ops)) = (pid, size, ops')
