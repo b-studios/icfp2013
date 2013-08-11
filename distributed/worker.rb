@@ -24,7 +24,7 @@ class Worker
   end
 
   def kill?
-    @task.problem.running?
+    not @task.problem.running?
   end
 
   def assign_task(task)
