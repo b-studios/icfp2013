@@ -13,6 +13,8 @@ require_relative 'problem.rb'
 
 class Server < Sinatra::Base
 
+  PRODUCTION = true
+
   # Server
 
   # problem that is currently being worked on
@@ -24,8 +26,8 @@ class Server < Sinatra::Base
 
   get '/status' do
   <<eos 
-  <h2></h2>
-  <pre>Expected workers</pre>
+  #{$real_problems}
+  <pre>Expected workers: </pre>
   <h2>Active workers:</h2>
   <pre>#{$workers}</pre>
   <h2>Current problem:</h2>
@@ -207,10 +209,20 @@ eos
 
   # communication with the real server
 
+
   def get_problem
 
     # production one
+    if PRODUCTION
+      prob = request_problems.select { |p| ! (p["solved"] == true) }.sort { |a, b|
+        a["size"] - b["size"]
+      }.select {|prob| 
+        prob["size"] < 5
+      }.first
 
+      halt 404 if prob == nil
+
+      Problem.new(prob)
     # => maybe sqlite, or by hand
 
     # test one
@@ -223,8 +235,9 @@ Problem.new({
 })
 =end
 
-    Problem.new(request_train)
-    
+    else
+      Problem.new(request_train)
+    end
   end
 
 
@@ -267,6 +280,19 @@ Problem.new({
 
   def request_train
     resp = perform_request('train')
+
+    if resp.code == '200'
+      JSON.parse(resp.body)
+
+    # currently just break!
+    else
+      halt resp.code.to_i
+    end    
+
+  end
+
+  def request_problems
+    resp = perform_request('myproblems')
 
     if resp.code == '200'
       JSON.parse(resp.body)
