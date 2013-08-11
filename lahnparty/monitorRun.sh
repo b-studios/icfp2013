@@ -5,7 +5,8 @@ baseUrl="http://plse.informatik.uni-marburg.de:8888/"
 pingInterval=5
 
 id=$1
-
+port=$2
+host=$3
 
 # Ensure that Ctrl-C kills the shell, instead of letting it self-restart.
 trap "exit 1" EXIT INT
@@ -56,4 +57,4 @@ runSubProcess() {
 cd "$(dirname "$0")"
 exe=./dist/build/lahnparty-run-worker/lahnparty-run-worker
 # This runs the Haskell executable with the given ID.
-runSubProcess ${exe} live ${id}
+runSubProcess ${exe} live ${id} ${port} ${host}
