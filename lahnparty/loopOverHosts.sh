@@ -5,8 +5,7 @@ id=1
 # XXX add more hosts
 #hosts="sakania boma alexandria"
 # Sorted in order of decreasing memory size.
-hosts="malabo
-sakania
+hosts="sakania
 boma
 kumasi
 daloa
