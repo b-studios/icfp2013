@@ -127,15 +127,15 @@ computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
 computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
   = let !knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
         -- knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
-        !knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
+        !knowAllNewCarryVal  = ((complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)) .&. knowAllMask
 
         !knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
         !knowCRNewCarryMask  = (carryMask `xor`resMask) .&. knowCRMask
-        !knowCRNewCarryVal   = carryVal .&. knowCRMask
+        !knowCRNewCarryVal   = carryVal .&. knowCRNewCarryMask
 
         !knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
         !knowVRNewCarryMask  = (v1Mask `xor` resMask) .&. knowVRMask
-        !knowVRNewCarryVal   = v1Val .&. knowVRMask
+        !knowVRNewCarryVal   = v1Val .&. knowVRNewCarryMask
 
         !knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
         !knowVCNewCarryMask  = (complement (v1Mask `xor` carryMask)) .&. knowVCMask
