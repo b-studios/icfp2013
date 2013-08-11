@@ -77,10 +77,10 @@ runWorker work url wid = do
 
 -- TODO maybe this breaks with an odd number of workers
 chooseGenerator :: Size -> Int -> Int -> (Generator,Int,Int)
-chooseGenerator size num total 
-    | num > k   = (NewGen.findP, num-k, total-k)
-    | otherwise = (OldGen.findP, num, k)
-  where k = (total+1) `div` 2
+chooseGenerator size num total = (NewGen.findP,num,total)
+--    | num > k   = (NewGen.findP, num-k, total-k)
+--    | otherwise = (OldGen.findP, num, k)
+--  where k = (total+1) `div` 2
 
 chooseSizeRange :: Size -> Int -> Int -> [Size]
 chooseSizeRange size num total =
