@@ -28,6 +28,10 @@ class Problem
     @problem_desc["id"]
   end
 
+  def size
+    @problem_desc["size"]
+  end
+
   def solved?
     @status == :solved
   end
