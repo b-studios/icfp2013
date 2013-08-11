@@ -1,12 +1,16 @@
 #!/bin/bash -x
 
-baseUrl="http://plse.informatik.uni-marburg.de:8888/"
 # In seconds
 pingInterval=5
 
 id=$1
 port=$2
 host=$3
+if [ -n "$port" ]; then
+  baseUrl="http://$host:$port/"
+else
+  baseUrl="http://plse.informatik.uni-marburg.de:8888/"
+fi
 
 # Ensure that Ctrl-C kills the shell, instead of letting it self-restart.
 trap "exit 1" EXIT INT
