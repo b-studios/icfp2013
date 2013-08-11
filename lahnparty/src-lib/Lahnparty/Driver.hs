@@ -102,6 +102,11 @@ genericDriver eval gen probId size ops = do
 
       HTTPError (4,1,0) str -> do
         handleTimeout (Just probId) False str
+      
+      -- we should only get this error code from the proxy server
+      HTTPError (4,1,2) _ -> do
+        putStrLn "Problem already solved by a different worker."
+        return ()
 
       err -> do
         handleUnexpected err
