@@ -57,7 +57,7 @@ runWorker work wid = do
       
       OK result -> do
         let Work pid size ops wnum wtot = work result
-        let (gen, wnum', wtot') = chooseGenerator size wnum wtot
+        let (gen, wnum', wtot') = (NewGen.findP, wnum, wtot) -- chooseGenerator size wnum wtot
         let sizes = chooseSizeRange size wnum' wtot'
         distDriver wid ((if wnum == 1 then BonusGen.addHardcoded else id) gen) pid sizes ops
         sleepThenTryAgain 3
