@@ -20,17 +20,17 @@ generate size ops points = undefined
 
 
 findP :: Generator
-findP size ops _ =
+findP sizes ops _ =
   if OpTFold `elem` ops
    then
      -- assertFalse (OpFold `elem` ops)
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops)) [5..size - 1]
+     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops)) (filter (>= 5) sizes)
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
-     map Lambda $ concatMap (\s -> findE s ops False (OpFold `elem` ops)) [1..size - 1]
+     map Lambda $ concatMap (\s -> findE s ops False (OpFold `elem` ops)) sizes
 
 
 genOp1 ops n infold mustfold op1 =

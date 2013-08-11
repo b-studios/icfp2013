@@ -319,8 +319,9 @@ instance JSON DistTrainingProblem where
 
 -- ** HTTP Support Code
 
-urlRoot = "http://icfpc2013.cloudapp.net/"
--- urlRoot = "http://jona:3000/"
+-- urlRoot = "http://icfpc2013.cloudapp.net/"
+-- urlRoot = "http://192.168.2.106:3000/"
+urlRoot = "http://plse.informatik.uni-marburg.de:8888/"
 secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
 
 -- | Send an HTTP request.

@@ -22,7 +22,7 @@ solveProblems g ids = mapM_ solveProblem ids
   where
     solveProblem i = do
       let (size,ops) = fetchData i
-      driver g i size ops
+      driver g i [1 .. size-1] ops
       threadDelay (wait * 1000000)
 
 solveProblemsOfSize :: Generator -> Int -> IO ()

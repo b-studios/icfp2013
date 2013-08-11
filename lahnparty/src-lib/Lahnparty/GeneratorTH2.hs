@@ -178,20 +178,20 @@ generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
 
 
-type Generator = Size -> [Op] -> Knowledge -> [P]
+type Generator = [Size] -> [Op] -> Knowledge -> [P]
 
 findP :: Generator
-findP size ops known =
+findP sizes ops known =
   if OpTFold `elem` ops'
    then
      -- assertFalse (OpFold `elem` ops)
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops') known) [5..size - 1]
+     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops') known) (filter (>= 5) sizes)
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
-     map Lambda $ concatMap (\s -> findE s ops' False (OpFold `elem` ops') known) [1..size - 1]
+     map Lambda $ concatMap (\s -> findE s ops' False (OpFold `elem` ops') known) sizes
   where
     ops' = sort ops
 

@@ -61,8 +61,8 @@ driver = genericDriver evalRequest
 -- | Distributed driver.
 distDriver wid = genericDriver (distEvalRequest wid)
 
-genericDriver :: EvalRequester -> Generator -> ProblemID -> Size -> [Op] -> IO ()
-genericDriver eval gen probId size ops = do
+genericDriver :: EvalRequester -> Generator -> ProblemID -> [Size] -> [Op] -> IO ()
+genericDriver eval gen probId sizes ops = do
     
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
     
@@ -80,7 +80,7 @@ genericDriver eval gen probId size ops = do
         let knowledge = buildKnowledge inputs' outputs
         
         putStr "Generating:"
-        let programs = gen size ops knowledge
+        let programs = gen sizes ops knowledge
         putStrLn "(kind of) DONE!"
         debugShowPrograms "before filtering" programs
         putStr "Filtering:"
@@ -94,11 +94,11 @@ genericDriver eval gen probId size ops = do
       HTTPError (4,2,0) _ -> do
         putStrLn "Waiting for more workers ..."
         threadDelay 3000000 -- 3 seconds
-        driver gen probId size ops
+        runAgain
 
       HTTPError (4,2,9) _ -> do
         waitForRateLimit429
-        driver gen probId size ops
+        runAgain
 
       HTTPError (4,1,0) str -> do
         handleTimeout (Just probId) False str
@@ -112,6 +112,7 @@ genericDriver eval gen probId size ops = do
         handleUnexpected err
 
     return ()
+  where runAgain = driver gen probId sizes ops
 
 getMoreInfo probId [] = do
   putStrLn "No more possible programs"
@@ -494,4 +495,4 @@ solveATrainProblemOfSize g ops size = do
   let (probId, size, ops) = parseTrainingData resp
 
   -- (3) Finally, try to solve the problem
-  driver g probId size ops
+  driver g probId [1 .. size-1] ops
