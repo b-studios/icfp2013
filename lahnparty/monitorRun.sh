@@ -29,10 +29,11 @@ mustKill() {
 }
 
 runSubProcess() {
-  bash -c 'echo $$; exec '"$* >&2" | {
+  bash -c 'echo $$; exec '"$* >& output-$id.txt" | {
+  # bash -c 'echo $$; exec '"$* >&2" | {
     read pid;
     while :; do
-      sleep 5
+      sleep 20
       [ "$(mustKill)" -eq 1 ] && { kill $pid; return; }
     done
   }
