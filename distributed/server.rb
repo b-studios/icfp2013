@@ -12,11 +12,200 @@ require_relative 'problem.rb'
 
 
 class Server < Sinatra::Base
-  #####
-  # You might want to configure this:
-  #####
 
-  $worker_limit = 1
+  # Server
+
+  # problem that is currently being worked on
+  $current_problem = nil
+
+  $old_problems = []
+
+  $workers = []
+
+  get '/status' do
+  <<eos 
+  <h2></h2>
+  <pre>Expected workers</pre>
+  <h2>Active workers:</h2>
+  <pre>#{$workers}</pre>
+  <h2>Current problem:</h2>
+  <pre>#{$current_problem}</pre>
+  <h2>Old problems:</h2>
+  <ul>#{ $old_problems.map {|p| "<li><pre>#{p}</pre></li>" }.join("\n") }</ul>
+  <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 1500) }</script>
+eos
+  end
+
+
+  # TODO if we kill a client and a new one registers we have to
+  # distribute the work anew - but correctly
+  get '/stay_alive/:id' do |id|
+
+    # now we have to figure out when to kill the client
+    worker = find_worker(id)
+
+    halt 410 if worker == nil or worker.kill? # TODO problem.timeout?
+  end
+
+
+  post '/register' do
+
+    content_type :json
+
+    reg_request = JSON.parse request.body.read
+    worker = find_or_create_worker reg_request["workerID"]
+
+    puts "Worker #{reg_request["workerID"]} is registering"
+
+    if worker.assigned? and $current_problem != worker.task.problem
+      worker.unassign
+    end
+
+    return worker.task.to_json if worker.assigned?
+
+    # create a new problem ! NETWORK ACTION HERE !
+    $current_problem = get_problem if no_current_problem
+
+    # we have enough workers, sorry :)
+    halt 423 if $current_problem.enough_workers?
+
+    task = $current_problem.assign_task_to worker
+    
+    task.to_json
+  end
+
+  post '/eval' do
+    content_type :json
+    
+    eval_request = JSON.parse request.body.read
+    worker = find_worker eval_request["workerID"]
+
+    check_preconditions_for worker
+
+    halt 420 unless $current_problem.enough_workers?
+    halt 412 unless $current_problem.id == eval_request["id"]
+
+    puts "Worker #{ worker } is performing an eval with #{ eval_request }"
+
+    data = nil
+
+    if $current_problem.actual_calls_to_eval > worker.task.successful_evals
+      data = $current_problem.cached_eval(worker.task.successful_evals)
+
+    # there are no datapoints, yet? -> Do a request to M$
+    else
+      data = request_eval(eval_request) do |code, msg|
+
+        case code
+        when 410
+          $current_problem.failed!
+          worker.unassign
+
+        when 412
+          $current_problem.solved!
+          worker.unassign
+
+        when 429
+          puts "Too many requests"
+
+        else
+          puts "Something terribly happend, code: #{code}"
+        end
+          
+        halt code
+      end
+
+      $current_problem.add_data_points(data)
+    end
+
+    worker.task.called_eval!
+
+    data.to_json
+  end
+
+  post '/guess' do
+    content_type :json
+
+    guess_request = JSON.parse request.body.read
+    worker = find_worker guess_request["workerID"]
+
+    check_preconditions_for worker
+
+    puts "guessing #{guess_request}"
+
+    
+    result = request_guess(guess_request) do |code|
+
+      case code
+      when 410
+        $current_problem.failed!
+        worker.unassign
+
+      when 412
+        $current_problem.solved!
+        worker.unassign
+
+      when 429
+        puts "Too many requests"
+
+      else
+        puts "Something terribly happend, code: #{code} (or it's a 429)"
+
+      end
+
+      halt code
+    end
+
+    if result['status'] == "win"
+      puts "We won! #{guess_request["id"]} #{guess_request["program"]}"
+
+      $current_problem.solved!
+      worker.unassign
+
+      $old_problems << $current_problem
+
+      $current_problem = nil
+
+    else
+      puts "Wrong guess #{guess_request["id"]} #{guess_request["program"]}"
+    end
+
+    result.to_json  
+  end
+
+  private
+
+
+  def check_preconditions_for(worker)
+    # we abuse this for already solved and failed
+    halt 412 if no_current_problem
+
+    halt 666 if worker == nil
+
+    halt 410 if $current_problem.failed?
+    halt 412 if $current_problem.solved?
+    halt 412 if worker.task.problem.id != $current_problem.id # for sanity - already solved
+  end
+
+  def no_current_problem
+    $current_problem == nil
+  end
+
+  def find_worker(id)
+    $workers.select {|worker| worker.id == id }.first
+  end
+
+  def find_or_create_worker(id)
+    w = find_worker id
+
+    if w == nil
+      w = Worker.new id
+      $workers << w
+    end
+    w
+  end
+
+  # communication with the real server
 
   def get_problem
 
@@ -37,196 +226,43 @@ Problem.new({
     Problem.new(request_train)
     
   end
-  #####
-  # You don't need to configure what's below.
-  #####
-
-  # Server
-
-  $available_workers = []
-
-  # problem that is currently being worked on
-  $current_problem = nil
-
-  $old_problems = []
-
-  $workers = []
-
-  get '/status' do
-  <<eos 
-  <h2>Active workers:</h2>
-  <pre>#{$workers}</pre>
-  <h2>Current problem:</h2>
-  <pre>#{$current_problem}</pre>
-  <h2>Old problems:</h2>
-  <ul>#{ $old_problems.map {|p| "<li><pre>#{p}</pre></li>" }.join("\n") }</ul>
-eos
-  end
-
-
-  post '/register' do
-    content_type :json
-
-    train_request = JSON.parse request.body.read
-    id = train_request["workerID"]
-
-    puts "Worker #{id} is registering"
-
-    worker = find_worker(id)
-
-    return worker.job.to_json if worker != nil
-
-    # we have enough workers, sorry :)
-    if $workers.size >= $worker_limit
-      halt 423
-    end
-
-    $current_problem = get_problem if $current_problem == nil
-
-    if worker == nil
-      job = $current_problem.split($worker_limit, $workers.size)
-      worker = Worker.new(id, job)
-      $workers << worker
-    end
-    
-    worker.job.to_json
-  end
-
-  post '/eval' do
-    content_type :json
-
-    # wait until all clients registered
-    if $workers.size < $worker_limit
-      halt 420
-    end
-
-    eval_request = JSON.parse request.body.read
-    id, worker_id = eval_request["id"], eval_request["workerID"]
-
-    puts "Worker #{worker_id} is performing an eval with #{eval_request}"
-
-    worker = find_worker(worker_id)
-
-    data = nil
-
-    # TODO other error code?
-    if $current_problem == nil
-      halt 412
-
-    elsif worker == nil
-      halt 412
-
-    # already solved
-    elsif id != $current_problem.id
-      halt 412
-
-    else
-
-      # we already have data points for this request count?
-      # -> just use it
-      if $current_problem.data_points.size > worker.calls_to_eval
-         data = $current_problem.data_points[worker.calls_to_eval]
-
-      # there are no datapoints, yet? 
-      # -> Do a request to M$
-      else
-        data = request_eval($current_problem.id, eval_request["arguments"])
-        $current_problem.add_data_points(data)
-      end
-
-      worker.called_eval!
-
-      {
-        "status" => "ok",
-        "arguments" => data["arguments"],
-        "outputs" => data["outputs"]
-      }.to_json
-    end
-  end
-
-  post '/guess' do
-    content_type :json
-
-    guess = JSON.parse request.body.read
-
-    puts "guessing #{guess}"
-
-    # already solved
-    if guess["id"] != $current_problem.id
-      halt 412
-
-    else
-      result = request_guess(guess["id"], guess["program"])
-
-      if result['status'] == "win"
-        puts "We won! #{guess["id"]} #{guess["program"]}"
-        $workers = []
-        $old_problems << $current_problem
-        $current_problem = nil
-      else
-
-        puts "Wrong guess #{guess["id"]} #{guess["program"]}"
-      end
-
-      result.to_json
-    end
-  end
-
-  private
-
-  def find_worker(id)
-    $workers.select {|worker| worker.id == id }.first
-  end
-
-
-  # communication with the real server
-
-  def request_guess(id, program)
-    resp = perform_request('guess', {
-      id: id,
-      program: program
-    })
-
-    if resp.code == '200'
-      JSON.parse(resp.body)
-
-    else
-      puts data["message"]
-      halt resp.code.to_i
-    end
-  end
 
 
   # returns
-  def request_eval(id, arguments)
+  def request_eval(eval_request, &error_callback)
 
-    resp = perform_request('eval', {
-      id: id,
-      arguments: arguments
-    })
-
+    resp = perform_request('eval', eval_request)
 
     if resp.code == '200'
       data = JSON.parse(resp.body)
       
       if data["status"] == "ok"
-        return {
-          "arguments" => arguments,
-          "outputs" => data["outputs"]
-        }
+        data["arguments"] = eval_request["arguments"]
+        return data
 
       # TODO not sure with this
       else
-        puts data["message"]
-        halt 400
+        error_callback.call(400, data["message"])
       end
 
-
-    # currently just break!
-    else
-      halt resp.code.to_i
+    else 
+        error_callback.call(resp.code.to_i, "something went wrong")
     end
   end
+
+
+  def request_guess(guess_request, &error_callback)
+    resp = perform_request('guess', guess_request)
+
+    if resp.code == '200'
+      JSON.parse(resp.body)
+
+    else
+      error_callback.call(resp.code.to_i, "something went wrong - while guessing")
+    end
+  end
+
+
 
 
   def request_train

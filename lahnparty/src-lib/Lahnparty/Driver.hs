@@ -115,7 +115,7 @@ genericDriver eval guess gen probId sizes ops = do
         handleUnexpected err
 
     return ()
-  where runAgain = driver gen probId sizes ops
+  where runAgain = genericDriver eval guess gen probId sizes ops
 
 getMoreInfo guess _ [] = do
   putStrLn "No more possible programs"

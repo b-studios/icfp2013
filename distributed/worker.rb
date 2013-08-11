@@ -1,19 +1,51 @@
+require 'time'
+
 class Worker
 
-  attr_reader :id, :job, :calls_to_eval
+  TIMEOUT = 300
 
-  def initialize(id, job)
+  attr_reader :id, :task
+
+  def initialize(id)
     @id = id
-    @job = job
-    @calls_to_eval = 0
+    @last_contact = Time.new
   end
 
   def to_s
-    "Worker id:#{@id} calls_to_eval:#{@calls_to_eval}"
+    "Worker id:#{@id} task: #{task.to_s}"
   end
 
-  def called_eval!
-    @calls_to_eval = @calls_to_eval + 1
+  def tick
+    @last_contact = Time.new
+  end
+
+  def timeout?
+    Time.new - @last_contact > TIMOUT
+  end
+
+  def kill?
+    timeout? or not @task.problem.running?
+  end
+
+  def assign_task(task)
+    @task = task
+  end
+
+  def assigned?
+    @task != nil # and @task.calls_to_eval == 0
+  end
+
+  def unassign
+    @task.unassign
+    @task = nil
+  end
+
+  def free?
+    @task == nil
+  end
+
+  def busy?
+    assigned? and @task.successful_evals > 0
   end
 
 end
