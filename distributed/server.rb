@@ -19,7 +19,7 @@ class Server < Sinatra::Base
     @real_problems = request_problems.select { |p| ! (p["solved"] == true) }.sort { |a, b|
       a["size"] - b["size"]
     }.select {|prob| 
-      prob["size"] <= 20 and not prob["operators"].include?("bonus") # not prob["operators"].include?("fold") and 
+      prob["size"] <= 26 and prob["operators"].include? "bonus"
     }
   end
 
@@ -41,7 +41,7 @@ class Server < Sinatra::Base
   <pre>#{$current_problem}</pre>
   <h2>Old problems:</h2>
   <ul>#{ $old_problems.reverse.map {|p| "<li><pre>#{p.id} #{p.size} #{p.status}</pre></li>" }.join("\n") }</ul>
-  <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 3000) }</script>
+  <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 10000) }</script>
 eos
   end
 
