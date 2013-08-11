@@ -74,6 +74,8 @@ evalPGen :: ProgData t => t -> P -> t
 evalPGen input (Lambda e) =
   evalEGen input (error "not in fold") (error "not in fold") e
 
+{-# INLINABLE evalEGen #-} 
+
 -- General version, soon with polymorphic interface.
 evalEGen :: ProgData t => t -> t -> t -> E -> t
 evalEGen input byte acc Hole = evalHole
@@ -96,6 +98,7 @@ evalEGen input byte acc (Op1 op1 e1) =
   evalOp1 op1 (evalEGen input byte acc e1)
 evalEGen input byte acc (Op2 op2 e1 e2) =
   evalOp2 op2 (evalEGen input byte acc e1) (evalEGen input byte acc e2)
+
 
 
 class ProgData t where

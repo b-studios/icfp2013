@@ -1,7 +1,8 @@
 module Main where
 
-import Lahnparty.GeneratorTH
+import Lahnparty.GeneratorTH2
 import Lahnparty.Language
+import Lahnparty.Types
 
 import Control.Monad(when)
 import System.Environment(getArgs)
@@ -17,8 +18,9 @@ nofoldops = [OpOp1 Not,
              OpOp2 Plus,
              OpIf0]
 
-programs size = findP size nofoldops undefined
-                ++ findP size (OpFold:nofoldops) undefined
+programs :: [Size] -> [P]
+programs size = findP size nofoldops emptyKnowledge
+                ++ findP size (OpFold:nofoldops) emptyKnowledge
 
 main = do
          args <- getArgs

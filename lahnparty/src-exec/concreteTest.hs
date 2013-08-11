@@ -19,7 +19,7 @@ solution = Lambda $ Op2 Plus (If0 (Op1 Shr1 (Op2 Plus One
 
 knowledge = V.zipWith know input output
 
-programs = findP 11 ops knowledge
+programs = findP [1 .. 10] ops knowledge
 
 main = do print $ length $ programs
           print $ length $ filterProgs programs (V.toList input) (V.toList output)

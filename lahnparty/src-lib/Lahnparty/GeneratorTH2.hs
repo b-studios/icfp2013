@@ -127,15 +127,15 @@ computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
 computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
   = let !knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
         -- knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
-        !knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
+        !knowAllNewCarryVal  = ((complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)) .&. knowAllMask
 
         !knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
         !knowCRNewCarryMask  = (carryMask `xor`resMask) .&. knowCRMask
-        !knowCRNewCarryVal   = carryVal .&. knowCRMask
+        !knowCRNewCarryVal   = carryVal .&. knowCRNewCarryMask
 
         !knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
         !knowVRNewCarryMask  = (v1Mask `xor` resMask) .&. knowVRMask
-        !knowVRNewCarryVal   = v1Val .&. knowVRMask
+        !knowVRNewCarryVal   = v1Val .&. knowVRNewCarryMask
 
         !knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
         !knowVCNewCarryMask  = (complement (v1Mask `xor` carryMask)) .&. knowVCMask
@@ -165,6 +165,7 @@ adjustForIf0Else k e = V.filter shouldKeep k
                                 in ((mask .&. condVal) /= 0)
 
 
+{-# SPECIALIZE evalEGen ::  TristateWord -> TristateWord -> TristateWord -> E -> TristateWord #-}
 
 
 evalPart :: E -> KnownPoint -> KnownPoint
@@ -178,20 +179,20 @@ generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
 generate size ops points = undefined
 
 
-type Generator = Size -> [Op] -> Knowledge -> [P]
+type Generator = [Size] -> [Op] -> Knowledge -> [P]
 
 findP :: Generator
-findP size ops known =
+findP sizes ops known =
   if OpTFold `elem` ops'
    then
      -- assertFalse (OpFold `elem` ops)
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops') known) [5..size - 1]
+     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops') known) (filter (>= 5) sizes)
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
-     map Lambda $ concatMap (\s -> findE s ops' False (OpFold `elem` ops') known) [1..size - 1]
+     map Lambda $ concatMap (\s -> findE s ops' False (OpFold `elem` ops') known) sizes
   where
     ops' = sort ops
 
@@ -218,18 +219,18 @@ instance Ord SizedE where
 --   (It must still be present in the  oplist).
 findE :: Size -> [Op] -> InFold -> MustFold -> Knowledge -> [E]
 findE 1 _   _      True _     = []
-findE 1 _   False  _    known = filter (isValidConst known) [Id Input, One, Zero]
-findE 1 _   True   _    known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
+findE 1 _   False  _    !known = filter (isValidConst known) [Id Input, One, Zero]
+findE 1 _   True   _    !known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True _     = []
 
-findE n@2 ops infold _ known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
-                                in concatMap gen ops1
+findE n@2 ops infold _ !known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
+                                 in concatMap gen ops1
   where
     gen op = genOp1 ops n infold False op known
 
-findE n ops infold mustfold known = if (n<5 && mustfold) 
-                                     then []
-                                     else concatMap gen (filter (isValid known) ops)
+findE n ops infold mustfold !known = if (n<5 && mustfold) 
+                                      then []
+                                      else concatMap gen (filter (isValid known) ops)
   where
     ops' = delete OpFold ops
 
