@@ -47,6 +47,7 @@ runWorker work wid g = do
       
       OK result -> do
         let Work pid size ops wnum wtot = work result
+        -- TODO split up work here!
         distDriver wid g pid size ops
         sleepThenTryAgain 3
       
