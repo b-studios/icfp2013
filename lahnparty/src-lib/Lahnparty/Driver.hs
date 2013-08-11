@@ -9,6 +9,7 @@ import System.Exit (exitFailure)
 import Lahnparty.Language
 import Lahnparty.WebAPI
 import qualified Lahnparty.GeneratorTH  as GTH1
+import qualified Lahnparty.GeneratorTH2 as GTH2
 import Lahnparty.GeneratorTH2
 import Lahnparty.ProblemsDB
 import Lahnparty.Types
@@ -455,7 +456,7 @@ rangeSizeStart = 16
 rangeSizeEnd = 20
 nProblemsForSize = 3
 
-main = solveTrainProblemsOfSizeFromTo GTH1.findP TrainNone rangeSizeStart rangeSizeEnd
+main = solveTrainProblemsOfSizeFromTo GTH2.findP TrainNone rangeSizeStart rangeSizeEnd
 
 solveTrainProblemsOfSizeFromTo :: Generator -> TrainOps -> Int -> Int -> IO ()
 solveTrainProblemsOfSizeFromTo g ops from to = mapM_ (solveTrainProblemsOfSize g nProblemsForSize ops) [from .. to]
