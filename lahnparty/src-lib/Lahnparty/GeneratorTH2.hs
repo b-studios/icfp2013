@@ -151,18 +151,6 @@ computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Kno
           ]
         carryMask' = shiftL (foldr1 (.|.) (map fst valMasks)) 1 .|. carryMask
         carryVal'  = shiftL (foldr1 (.|.) (map snd valMasks)) 1 .|. carryVal
-
-{-
-        carryMask' = shiftL (knowAllMask
-                             .|. (knowCRMask .&. knowCRNewCarryMask)
-                             .|. (knowVRMask .&. knowVRNewCarryMask)
-                             .|. (knowVCMask .&. knowVCNewCarryMask)) 1
--- XXX Mask off parts with their individual masks
-        carryVal'  = shiftL (knowAllNewCarryVal
-                             .|. knowCRNewCarryVal 
-                             .|. knowVRNewCarryVal
-                             .|. knowVCNewCarryVal) 1
--}
 --    in if carryVal == carryVal'
     in if carryMask == carryMask'
       then carry
@@ -242,11 +230,6 @@ findE 1 _   False  _    known = filter (isValidConst known) [Id Input, One, Zero
 findE 1 _   True   _    known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True _     = []
 
--- XXX Here (n = 2 and above) we ignore mustfold, so it's not guaranteed that
--- *all* results will contain fold. However, if 2 < n < 5, we return no results
--- if mustfold is true. This behavior is inconsistent with the description, so
--- one of the two should be fixed (not sure which).
--- XXX TH: no, everything is fine, mustfold is handled through pattern match
 findE n@2 ops infold _ known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
                                 in concatMap gen ops1
   where
@@ -262,8 +245,6 @@ findE n ops infold mustfold known = if (n<5 && mustfold)
     gen (OpOp1 op1) = genOp1 ops n infold mustfold op1 known
     gen op@(OpOp2 op2) 
                     = if mustfold
-                      -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
-
                         then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
                                                  e0 <- findE i       ops  infold True (adjustForFst known op),   -- XXX don't we need e0 /= Zero, since mustfold = True currently doesn't imply we get a program with a fold?
                                                  e1 <- findE (n-1-i) ops' infold False (adjustForSnd known op e0),
