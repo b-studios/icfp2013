@@ -5364,7 +5364,7 @@ completeTristate (T bits mask) randBits = bits .&. mask .|. randBits .&. complem
 traceShowSame a = traceShow a a
 
 testPlus nBits randomMask1 randomMask2 inp1 inp2 =
-  traceShowSame (tristateConst (filtInp1 + filtInp2)) == traceShowSame (evalOp2 Plus (T inp1 undefined) (T inp2 undefined))
+  traceShowSame (tristateConst (filtInp1 + filtInp2)) == traceShowSame (normalizeTristate (evalOp2 Plus (T inp1 $ traceShowSame mask1) (T inp2 $ traceShowSame mask2)))
   where
     nthBit = (1 `shiftL` nBits)
     baseMask = nthBit - 1
