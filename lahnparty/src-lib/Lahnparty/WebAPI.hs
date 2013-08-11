@@ -56,7 +56,7 @@ guessRequest id = guessRequestString id . prettyP
 
 -- | Send a guess request with a program represented as a string.
 guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)
-guessRequestString id s = performRequest "guess" (Guess id s)
+guessRequestString id s = performRequest "guess" (Guess Nothing id s)
 
 
 -- ** Submitting a Training Request
@@ -103,6 +103,14 @@ registerWorker = performRequest "register" . RegisterRequest
 -- | Send an evaluation request as a distributed worker.
 distEvalRequest :: WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
 distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid vs)
+
+-- | Send a guess request as a distributed worker.
+distGuessRequest :: WorkerID -> ProblemID -> P -> IO (Response GuessResponse)
+distGuessRequest wid pid = distGuessRequestString wid pid . prettyP
+
+-- | Send a guess request with a program represented as a string.
+distGuessRequestString :: WorkerID -> ProblemID -> String -> IO (Response GuessResponse)
+distGuessRequestString wid pid s = performRequest "guess" (Guess (Just wid) pid s)
 
 
 --
@@ -179,7 +187,7 @@ instance JSON EvalResponse where
     ]
 
 
-data Guess = Guess ProblemID String
+data Guess = Guess (Maybe WorkerID) ProblemID String
   deriving (Eq,Show)
 
 instance JSON Guess where
@@ -187,15 +195,16 @@ instance JSON Guess where
   readJSON (JSObject o) = do
       id   <- lookupReq m "id"
       prog <- lookupReq m "program"
-      return (Guess id prog)
+      wid  <- lookupOpt m "workerID"
+      return (Guess wid id prog)
     where m = fromJSObject o
   readJSON _ = Error "Error reading Guess (not JSObject)."
   
-  showJSON (Guess id prog) =
+  showJSON (Guess wid id prog) =
       JSObject $ toJSObject $ [
         ("id", showJSON id),
         ("program", showJSON prog)
-      ]
+      ] ++ optField "workerID" wid
 
 
 instance JSON GuessResponse where

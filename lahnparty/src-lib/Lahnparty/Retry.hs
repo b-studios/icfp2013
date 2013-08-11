@@ -22,7 +22,7 @@ import Lahnparty.Driver
 maxEvalInputs :: Int
 maxEvalInputs = 256
 
-retry :: ProblemID -> [P] -> IO ()
+retry :: GuessRequester -> ProblemID -> [P] -> IO ()
 retry = getMoreInfo
 
 retryWithEval :: ProblemID -> [P] ->

@@ -53,16 +53,19 @@ debugShowPrograms s programs =
     putStrLn $ "First 10 generated programs:"
     mapM_ print $ take 10 programs
 
-type EvalRequester = ProblemID -> [Word64] -> IO (Response EvalResponse)
+type EvalRequester  = ProblemID -> [Word64] -> IO (Response EvalResponse)
+type GuessRequester = ProblemID -> P -> IO (Response GuessResponse)
 
 -- | The old driver (this should work the same as before).
-driver = genericDriver evalRequest
+driver = genericDriver evalRequest guessRequest
 
 -- | Distributed driver.
-distDriver wid = genericDriver (distEvalRequest wid)
+distDriver wid = genericDriver (distEvalRequest wid) (distGuessRequest wid)
 
-genericDriver :: EvalRequester -> Generator -> ProblemID -> [Size] -> [Op] -> IO ()
-genericDriver eval gen probId sizes ops = do
+-- | Driver that can be instantiated for single or distributed requests.
+genericDriver :: EvalRequester -> GuessRequester ->
+                 Generator -> ProblemID -> [Size] -> [Op] -> IO ()
+genericDriver eval guess gen probId sizes ops = do
     
     putStrLn $ "== ProblemID: " ++ probId ++ " =="
     
@@ -88,7 +91,7 @@ genericDriver eval gen probId sizes ops = do
         putStrLn "(kind of) DONE!"
         debugShowPrograms "after filtering" programsFilt
 
-        getMoreInfo probId programsFilt
+        getMoreInfo guess probId programsFilt
 
       -- we should only get this error code from the proxy server
       HTTPError (4,2,0) _ -> do
@@ -114,14 +117,14 @@ genericDriver eval gen probId sizes ops = do
     return ()
   where runAgain = driver gen probId sizes ops
 
-getMoreInfo probId [] = do
+getMoreInfo guess _ [] = do
   putStrLn "No more possible programs"
   return ()
 
-getMoreInfo pid (p:ps) = do
+getMoreInfo guess pid (p:ps) = do
     
     putStrLn $ "Guessing program " ++ prettyP p
-    res <- guessRequest pid p
+    res <- guess pid p
     
     case res of
       
@@ -130,13 +133,13 @@ getMoreInfo pid (p:ps) = do
         return ()
       OK (GuessResponseError str) -> do
         putStrLn $ "What? GuessResponseError " ++ str
-        getMoreInfo pid ps
+        getMoreInfo guess pid ps
       OK (GuessResponseMismatch words) -> do
         putStrLn "Guess mismatch, filtering ..."
         let programsFilt = filterProgs ps [words !! 0] [words !! 1]
         when expensiveDebug $ do
           putStrLn $ "# generated programs after filtering on counterexample: " ++ show (length ps)
-        getMoreInfo pid programsFilt
+        getMoreInfo guess pid programsFilt
 
       -- we should only get this error code from the proxy server
       HTTPError (4,1,2) _ -> do
@@ -156,7 +159,7 @@ getMoreInfo pid (p:ps) = do
         tryAgain
   
   where
-    tryAgain = getMoreInfo pid (p:ps)
+    tryAgain = getMoreInfo guess pid (p:ps)
 
 
 filterProgs programs inputs outputs =
