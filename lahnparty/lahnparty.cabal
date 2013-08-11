@@ -25,6 +25,7 @@ library
                        Lahnparty.GeneratorTH,
                        Lahnparty.GeneratorTH2,
                        Lahnparty.WebAPI,
+                       Lahnparty.WorkerDriver,
                        Lahnparty.ProblemsDB,
                        Lahnparty.Driver,
                        Lahnparty.Showtime,
@@ -37,6 +38,13 @@ executable lahnparty-solver-real
   ghc-options:         -O2
   hs-source-dirs:      src-exec
   main-is:             solver.hs
+  build-depends:       lahnparty,
+                       base >= 4.5
+
+executable lahnparty-run-worker
+  ghc-options:         -O2
+  hs-source-dirs:      src-exec
+  main-is:             runWorker.hs
   build-depends:       lahnparty,
                        base >= 4.5
 
@@ -62,6 +70,15 @@ executable lahnparty-measure2
                        vector,
                        base >= 4.5
 
+executable lahnparty-concreteTest
+  ghc-options:         -O2
+  hs-source-dirs:      src-exec
+  main-is:             concreteTest.hs
+  build-depends:       lahnparty,
+                       vector,
+                       base >= 4.5
+
+
 test-suite lahnparty-tests
   Type:                exitcode-stdio-1.0
   Hs-source-dirs:      src-test
@@ -74,12 +91,12 @@ test-suite lahnparty-tests
                        HUnit,
                        QuickCheck
 
-executable lahnparty-web-tests
-  Hs-source-dirs:      src-test
-  Main-is:             web-tests.hs
-  Build-depends:       lahnparty,
-                       base >=4.5,
-                       HTTP,
-                       test-framework,
-                       test-framework-hunit,
-                       HUnit
+-- executable lahnparty-web-tests
+--   Hs-source-dirs:      src-test
+--   Main-is:             web-tests.hs
+--   Build-depends:       lahnparty,
+--                        base >=4.5,
+--                        HTTP,
+--                        test-framework,
+--                        test-framework-hunit,
+--                        HUnit

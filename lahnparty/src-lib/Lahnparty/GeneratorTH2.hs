@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Lahnparty.GeneratorTH2 where
 
 import Lahnparty.Language
@@ -9,6 +10,7 @@ import Data.List(delete)
 import qualified Data.Vector as V
 import Data.Word (Word64)
 import Debug.Trace
+import Data.List
 
 type Argument = Word64
 type Result = Word64
@@ -73,18 +75,97 @@ shiftKnowL n (Know m a r) = Know (shiftL m n) a (shiftL r n)
 adjustForFst :: Knowledge -> Op -> Knowledge
 adjustForFst k (OpOp2 And) = V.map (\(Know m a r) -> Know (m .&. r) a (m .&. r)) k
 adjustForFst k (OpOp2 Or)  = V.map (\(Know m a r) -> Know (m .&. (complement r)) a 0) k
-adjustForFst k _ = k
-
+adjustForFst k _ = emptyKnowledge
 
 
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
-adjustForSnd k op _ = adjustForFst k op -- #todo: partial evaluate E and use that info!
+-- adjustForSnd _ (OpOp2 Plus) _ = emptyKnowledge
+adjustForSnd k op e = --old: adjustForFst k op -- #todo: partial evaluate E and use that info! --done!
+                      V.map (adjustForSnd' op e) k -- do not delete empty KnownPoints ( where mask is 0)... we might regain information and then need the data point
+
+adjustForSnd' :: Op -> E -> KnownPoint -> KnownPoint
+adjustForSnd' (OpOp2 And) e p@(Know m a r) = let (Know m1 _ v1) = evalPart e p
+                                             in Know (m .&. m1 .&. v1) a (v1 .&. r)
+adjustForSnd' (OpOp2 Or) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
+                                             in Know (m .&. m1 .&. (complement v1)) a r
+adjustForSnd' (OpOp2 Xor) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
+                                              in Know (m .&. m1) a (v1 `xor` r)
+adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let p1 @ (Know m1 _ v1) = evalPart e p
+                                                   -- Here, the initial carry must be 1!
+                                                   hasCarryMask   = (complement r) .&. v1
+                                                   -- Here, the initial carry must be 0!
+                                                   hasNoCarryMask = r .&. (complement v1)
+                                                   carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
+                                                   carryVal = shiftL hasCarryMask 1
+                                                   finalCarry =
+                                                     -- Know carryMask 0 carryVal
+                                                     computeCarry p1 (Know carryMask 0 carryVal) p
+                                               in computeV2 p1 finalCarry p
+
+computeV2 :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
+computeV2 v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask a resVal)
+  = let knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
+        knowAllNewV2Val     = (resVal `xor` v1Val `xor` carryVal)
+{-
+        knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
+        -- knowCRNewCarryMask  = (carryMask `xor`resMask)
+        -- knowCRNewCarryVal   = carryVal
+
+        knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
+        -- knowVRNewCarryMask  = (v1Mask `xor` resMask)
+        -- knowVRNewCarryVal   = v1Val
+
+        knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
+        -- knowVCNewCarryMask  = complement (v1Mask `xor` carryMask)
+        -- knowVCNewCarryVal   = v1Val
+-}
+    in Know knowAllMask a knowAllNewV2Val
+
+-- Fixpoint loop to compute carry more precisely.
+
+computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
+computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
+  = let !knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
+        -- knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
+        !knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
+
+        !knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
+        !knowCRNewCarryMask  = (carryMask `xor`resMask) .&. knowCRMask
+        !knowCRNewCarryVal   = carryVal .&. knowCRMask
+
+        !knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
+        !knowVRNewCarryMask  = (v1Mask `xor` resMask) .&. knowVRMask
+        !knowVRNewCarryVal   = v1Val .&. knowVRMask
+
+        !knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
+        !knowVCNewCarryMask  = (complement (v1Mask `xor` carryMask)) .&. knowVCMask
+        !knowVCNewCarryVal   = v1Val .&. knowVCNewCarryMask
+
+        !carryMask' = (shiftL (knowAllMask .|. knowCRNewCarryMask .|. knowVRNewCarryMask .|. knowVCNewCarryMask) 1) .|. carryMask
+        !carryVal'  = (shiftL (knowAllNewCarryVal .|. knowCRNewCarryVal .|. knowVRNewCarryVal .|. knowVCNewCarryVal) 1) .|. carryVal
+--    in if carryVal == carryVal'
+    in if carryMask == carryMask'
+      then carry
+      else computeCarry v1 (Know carryMask' 0 carryVal') res
+
 
 -- #todo: partial evaluate E and use that info!
 adjustForIf0Then :: Knowledge -> E -> Knowledge
-adjustForIf0Then k _ = k
+adjustForIf0Then k e = V.filter shouldKeep k
+  where
+    shouldKeep :: KnownPoint -> Bool
+    shouldKeep p@(Know m _ r) = let (Know mask _ condVal) = evalPart e p
+                                in (mask == allBits && condVal == 0)
+
 adjustForIf0Else :: Knowledge -> E -> Knowledge
-adjustForIf0Else k _ = k
+adjustForIf0Else k e = V.filter shouldKeep k
+  where
+    shouldKeep :: KnownPoint -> Bool
+    shouldKeep p@(Know m _ r) = let (Know mask _ condVal) = evalPart e p
+                                in ((mask .&. condVal) /= 0)
+
+
+
 
 evalPart :: E -> KnownPoint -> KnownPoint
 evalPart e (Know m a r) = let (T r' m') = evalEGen (T a allBits) (T 0 0) (T 0 0) e
@@ -101,16 +182,18 @@ type Generator = Size -> [Op] -> Knowledge -> [P]
 
 findP :: Generator
 findP size ops known =
-  if OpTFold `elem` ops
+  if OpTFold `elem` ops'
    then
      -- assertFalse (OpFold `elem` ops)
 
      -- XXX This findE should produce a fold at the top level
      -- map Lambda $ findETopFold (size - 1) (delete OpTFold ops)
-     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops) known) [5..size - 1]
+     map Lambda $ concatMap (\s -> findETopFold s (delete OpTFold ops') known) [5..size - 1]
    else
      --map Lambda $ findE (size - 1) ops False (OpFold `elem` ops)
-     map Lambda $ concatMap (\s -> findE s ops False (OpFold `elem` ops) known) [1..size - 1]
+     map Lambda $ concatMap (\s -> findE s ops' False (OpFold `elem` ops') known) [1..size - 1]
+  where
+    ops' = sort ops
 
 
 genOp1 ops n infold mustfold op1 known =
@@ -139,11 +222,6 @@ findE 1 _   False  _    known = filter (isValidConst known) [Id Input, One, Zero
 findE 1 _   True   _    known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True _     = []
 
--- XXX Here (n = 2 and above) we ignore mustfold, so it's not guaranteed that
--- *all* results will contain fold. However, if 2 < n < 5, we return no results
--- if mustfold is true. This behavior is inconsistent with the description, so
--- one of the two should be fixed (not sure which).
--- XXX TH: no, everything is fine, mustfold is handled through pattern match
 findE n@2 ops infold _ known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
                                 in concatMap gen ops1
   where
@@ -159,8 +237,6 @@ findE n ops infold mustfold known = if (n<5 && mustfold)
     gen (OpOp1 op1) = genOp1 ops n infold mustfold op1 known
     gen op@(OpOp2 op2) 
                     = if mustfold
-                      -- XXX: in all the examples below, we generate all possible values of e1 again for each value of e0 - don't we? That's a waste, fixable by inserting lets.
-
                         then [ (Op2 op2) e0 e1 |  i <- [5..((n-1) `div` 2)],                   -- optimization: e0 <=  e1, i starts at 5 to allow for fold
                                                  e0 <- findE i       ops  infold True (adjustForFst known op),   -- XXX don't we need e0 /= Zero, since mustfold = True currently doesn't imply we get a program with a fold?
                                                  e1 <- findE (n-1-i) ops' infold False (adjustForSnd known op e0),
