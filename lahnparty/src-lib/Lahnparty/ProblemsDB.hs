@@ -15,6 +15,10 @@ problemSize = fst . fetchData
 problemOps :: ProblemID -> [Op]
 problemOps = snd . fetchData
 
+-- | Has no nested fold, if0, plus
+isEasy :: ProblemID -> Bool
+isEasy pid = not (hasNestedFold pid || hasIf0 pid || hasPlus pid)
+
 -- | Has a top-level fold.
 hasTFold :: ProblemID -> Bool
 hasTFold = elem OpTFold . problemOps
@@ -31,6 +35,13 @@ hasFold pid = hasNestedFold pid || hasTFold pid
 hasNoFold :: ProblemID -> Bool
 hasNoFold = not . hasFold
 
+-- | Has if0
+hasIf0 :: ProblemID -> Bool
+hasIf0 = elem OpIf0 . problemOps
+
+-- | Has Plus
+hasPlus :: ProblemID -> Bool
+hasPlus = elem (OpOp2 Plus) . problemOps
 
 -- * Database
 
