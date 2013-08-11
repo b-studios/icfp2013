@@ -29,6 +29,22 @@ data E
   | Op2 !Op2 !E !E
     deriving (Eq, Ord)
 
+canonicalize :: E -> E
+canonicalize (Op1 op Zero) | isShift op = Zero
+canonicalize (Op2 _ Zero e) = canonicalize e
+
+canonicalize (Op2 op1 (Op2 op2 e1 e2) e3) | op1 == op2 = Op2 op1 e1 (Op2 op1 e2 e3)
+
+canonicalize e @ (Op2 op e1 e2) = if e1 <= e2 then e else Op2 op e2 e1
+
+canonicalize (Op1 Not (Op1 Not e)) = canonicalize e
+canonicalize (Fold e0 e1 Zero) = Zero
+canonicalize (Fold e0 e1 One) = One
+canonicalize (Fold e0 e1 (Id Input)) = Id Input
+canonicalize (If0 Zero e1 e2) = canonicalize e1
+canonicalize (If0 One e1 e2) = canonicalize e2
+canonicalize e = e
+
 isShift :: Op1 -> Bool
 isShift Not = False
 isShift _ = True
