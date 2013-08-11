@@ -20,6 +20,27 @@ expensiveDebug = False
 -- continue even after failures.
 exitWhenFailing = True
 
+-- | Handle a timeout, and decide whether to exit. startedAlready tells us if we
+--   already started the timer on this problem with a previous request, in which
+--   case a timeout is our fault and we should exit defensively. Otherwise, a
+--   timeout means "this program was solved earlier".
+handleTimeout :: Maybe ProblemID -> Bool -> String -> IO ()
+handleTimeout pid startedAlready str = do
+  putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
+  putStrLn $ "Error message: " ++ str
+  when (startedAlready && exitWhenFailing)
+    exitFailure
+
+reportUnexpected err =
+  putStrLn $ "Unknown error: " ++ show err
+
+-- | Unexpected error, fail and exit (after creating debug output). This should
+--   only be used if the timer is not currently running on a problem.
+handleUnexpected err = do
+  reportUnexpected err
+  putStrLn "Exiting defensively."  -- unknown error
+  exitFailure
+
 -- | Unexpected error, fail. This should only be used if the timer is not
 --   currently running on a problem. Among other reasons, it will interpret
 --   timeouts as "this program was solved earlier" and continue, instead of
@@ -36,13 +57,10 @@ failOnTimeout :: Show t => Response t -> Maybe ProblemID -> Bool -> IO Bool
 failOnTimeout err pid startedAlready = do
   case err of
     HTTPError (4,1,0) str -> do
-      putStrLn $ ">>> We failed with a timeout" ++ maybe "" (\i -> " on problem ID: " ++ show i) pid
-      putStrLn $ "Error message: " ++ str
-      when (startedAlready && exitWhenFailing)
-         exitFailure
+      handleTimeout pid startedAlready str
       return True
     _ -> do
-      putStrLn $ "Unknown error: " ++ show err
+      reportUnexpected err
       return False
 
 -- | Wait a few seconds because of a too many requests error.
