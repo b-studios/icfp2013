@@ -4,8 +4,8 @@ require_relative 'task.rb'
 
 class Problem
 
-  WORKERS_NEEDED = 3
-
+  WORKERS_NEEDED = 2
+  
   attr_accessor :tasks
 
   # data_points is an array of hashs: { arguments: [], outputs: [] }
