@@ -222,14 +222,14 @@ findE 1 _   False  _    known = filter (isValidConst known) [Id Input, One, Zero
 findE 1 _   True   _    known = filter (isValidConst known) [Id Input, One, Zero, Id Byte, Id Acc]
 findE 2 _   _      True _     = []
 
-findE n@2 ops infold _ known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
-                                in concatMap gen ops1
+findE n@2 ops infold _ !known  = let ops1 = map (\(OpOp1 op) -> op) $ filter (isValid known) $ filter isOp1 ops 
+                                 in concatMap gen ops1
   where
     gen op = genOp1 ops n infold False op known
 
-findE n ops infold mustfold known = if (n<5 && mustfold) 
-                                     then []
-                                     else concatMap gen (filter (isValid known) ops)
+findE n ops infold mustfold !known = if (n<5 && mustfold) 
+                                      then []
+                                      else concatMap gen (filter (isValid known) ops)
   where
     ops' = delete OpFold ops
 
