@@ -75,15 +75,64 @@ adjustForFst k (OpOp2 Or)  = V.map (\(Know m a r) -> Know (m .&. (complement r))
 adjustForFst k _ = k
 
 
-
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
-adjustForSnd k op _ = adjustForFst k op -- #todo: partial evaluate E and use that info!
+adjustForSnd k op e = --old: adjustForFst k op -- #todo: partial evaluate E and use that info! --done!
+                      V.map (adjustForSnd' op e) k -- #todo: delete empty KnownPoints ( where mask is 0)
+
+adjustForSnd' :: Op -> E -> KnownPoint -> KnownPoint
+adjustForSnd' (OpOp2 And) e p@(Know m a r) = let (Know m1 _ v1) = evalPart e p
+                                             in Know (m .&. m1 .&. v1) a (v1 .&. r)
+adjustForSnd' (OpOp2 Or) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
+                                             in Know (m .&. m1 .&. (complement v1)) a r
+adjustForSnd' (OpOp2 Xor) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
+                                              in Know (m .&. m1) a (v1 `xor` r)
+adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let (Know m1 _ v1) = evalPart e p
+                                                   hasCarryMask   = (complement r) .&. v1
+                                                   hasNoCarryMask = r .&. (complement v1)
+                                                   carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
+                                                   carry = shiftL (hasCarryMask .|. (complement hasNoCarryMask)) 1
+                                               in Know (m .&. m1) a (v1 `xor` r)
+
+computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
+computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
+  = let knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
+        knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
+        knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
+        knowCRNewCarryMask  = (carryMask `xor`resMask)
+        knowCRNewCarryVal   = carryVal
+        knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
+        knowVRNewCarryMask  = (v1Mask `xor` resMask)
+        knowVRNewCarryVal   = v1Mask
+        knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
+        knowVCNewCarryMask  = (v1Mask .&. carryMask)
+        knowVCNewCarryVal   = v1Mask
+        carryMask' = shiftL (knowAllMask .|. knowCRMask .|. knowVRMask .|. knowVCMask) 1
+        carryVal'  = shiftL (knowAllNewCarryVal 
+                             .|. knowCRNewCarryVal 
+                             .|. knowVRNewCarryVal
+                             .|. knowVCNewCarryVal) 1
+    in if carryVal == carryVal'
+      then carry
+      else computeCarry v1 (Know carryMask' 0 carryVal') res
+
 
 -- #todo: partial evaluate E and use that info!
 adjustForIf0Then :: Knowledge -> E -> Knowledge
-adjustForIf0Then k _ = k
+adjustForIf0Then k e = V.filter shouldKeep k
+  where
+    shouldKeep :: KnownPoint -> Bool
+    shouldKeep p@(Know m _ r) = let (Know mask _ condVal) = evalPart e p
+                                in (mask == allBits && condVal == 0)
+
 adjustForIf0Else :: Knowledge -> E -> Knowledge
-adjustForIf0Else k _ = k
+adjustForIf0Else k e = V.filter shouldKeep k
+  where
+    shouldKeep :: KnownPoint -> Bool
+    shouldKeep p@(Know m _ r) = let (Know mask _ condVal) = evalPart e p
+                                in ((mask .&. condVal) /= 0)
+
+
+
 
 evalPart :: E -> KnownPoint -> KnownPoint
 evalPart e (Know m a r) = let (T r' m') = evalEGen (T a allBits) (T 0 0) (T 0 0) e
