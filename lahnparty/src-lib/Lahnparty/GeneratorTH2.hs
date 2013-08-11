@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Lahnparty.GeneratorTH2 where
 
 import Lahnparty.Language
@@ -80,7 +81,7 @@ adjustForFst k _ = emptyKnowledge
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
 -- adjustForSnd _ (OpOp2 Plus) _ = emptyKnowledge
 adjustForSnd k op e = --old: adjustForFst k op -- #todo: partial evaluate E and use that info! --done!
-                      V.map (adjustForSnd' op e) k -- #todo: delete empty KnownPoints ( where mask is 0)
+                      V.map (adjustForSnd' op e) k -- do not delete empty KnownPoints ( where mask is 0)... we might regain information and then need the data point
 
 adjustForSnd' :: Op -> E -> KnownPoint -> KnownPoint
 adjustForSnd' (OpOp2 And) e p@(Know m a r) = let (Know m1 _ v1) = evalPart e p
@@ -97,8 +98,8 @@ adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let p1 @ (Know m1 _ v1) = evalPar
                                                    carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
                                                    carryVal = shiftL hasCarryMask 1
                                                    finalCarry =
-                                                     Know carryMask 0 carryVal
-                                                     -- computeCarry p1 (Know carryMask 0 carryVal) p
+                                                     -- Know carryMask 0 carryVal
+                                                     computeCarry p1 (Know carryMask 0 carryVal) p
                                                in computeV2 p1 finalCarry p
 
 computeV2 :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
@@ -124,33 +125,24 @@ computeV2 v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know r
 
 computeCarry :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
 computeCarry v1@(Know v1Mask _ v1Val) carry@(Know carryMask _ carryVal) res@(Know resMask _ resVal)
-  = let knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
+  = let !knowAllMask         = (v1Mask .&. carryMask .&. resMask) --all three known 
         -- knowAllNewCarryVal  = ((v1Mask .&. carryMask) .|. (v1Mask .&. resMask) .|. (carryMask .&. resMask)) 
-        knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
+        !knowAllNewCarryVal  = (complement resVal .&. (v1Val .|. carryVal)) .|. (resVal .&. v1Val .&. carryVal)
 
-        knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
-        knowCRNewCarryMask  = (carryMask `xor`resMask)
-        knowCRNewCarryVal   = carryVal
+        !knowCRMask          = ((complement v1Mask) .&. carryMask .&. resMask) --know carry and res
+        !knowCRNewCarryMask  = (carryMask `xor`resMask) .&. knowCRMask
+        !knowCRNewCarryVal   = carryVal .&. knowCRMask
 
-        knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
-        knowVRNewCarryMask  = (v1Mask `xor` resMask)
-        knowVRNewCarryVal   = v1Val
+        !knowVRMask          = (v1Mask .&. (complement carryMask) .&. resMask) --know v1 and res
+        !knowVRNewCarryMask  = (v1Mask `xor` resMask) .&. knowVRMask
+        !knowVRNewCarryVal   = v1Val .&. knowVRMask
 
-        knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
-        knowVCNewCarryMask  = complement (v1Mask `xor` carryMask)
-        knowVCNewCarryVal   = v1Val
+        !knowVCMask          = (v1Mask .&. carryMask .&. (complement resMask)) --know v1 and carry
+        !knowVCNewCarryMask  = (complement (v1Mask `xor` carryMask)) .&. knowVCMask
+        !knowVCNewCarryVal   = v1Val .&. knowVCNewCarryMask
 
-        doMask mask val = (mask, mask .&. val)
-
-        -- This is slow (?) inline everything again!
-        valMasks =
-          [ doMask knowAllMask knowAllNewCarryVal
-          , doMask (knowCRMask .&. knowCRNewCarryMask) knowCRNewCarryVal
-          , doMask (knowVRMask .&. knowVRNewCarryMask) knowVRNewCarryVal
-          , doMask (knowVCMask .&. knowVCNewCarryMask) knowVCNewCarryVal
-          ]
-        carryMask' = shiftL (foldr1 (.|.) (map fst valMasks)) 1 .|. carryMask
-        carryVal'  = shiftL (foldr1 (.|.) (map snd valMasks)) 1 .|. carryVal
+        !carryMask' = (shiftL (knowAllMask .|. knowCRNewCarryMask .|. knowVRNewCarryMask .|. knowVCNewCarryMask) 1) .|. carryMask
+        !carryVal'  = (shiftL (knowAllNewCarryVal .|. knowCRNewCarryVal .|. knowVRNewCarryVal .|. knowVCNewCarryVal) 1) .|. carryVal
 --    in if carryVal == carryVal'
     in if carryMask == carryMask'
       then carry
