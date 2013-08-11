@@ -4,12 +4,14 @@ require_relative 'task.rb'
 
 class Problem
 
-  WORKERS_NEEDED = 17
+  WORKERS_NEEDED = 3
+
+  TIMEOUT = 30
 
   attr_accessor :tasks
 
   # data_points is an array of hashs: { arguments: [], outputs: [] }
-  attr_reader :problem_desc, :workers, :pieces, :data_points, :status
+  attr_reader :problem_desc, :workers, :pieces, :data_points, :status, :generated
 
   def initialize(prob)
     @problem_desc = prob
@@ -18,6 +20,8 @@ class Problem
     @pieces = nil
     @data_points = []
     @status = :running
+
+    @last_time = Time.new
   end
 
   def add_data_points(data)
@@ -48,8 +52,16 @@ class Problem
     @status = :failed
   end
 
+  def prolong
+    @last_time = Time.new
+  end
+
   def running?
     @status == :running
+  end
+
+  def skip?
+    (Time.new - @last_time) > TIMEOUT
   end
 
   def actual_calls_to_eval

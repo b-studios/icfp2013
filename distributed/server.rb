@@ -19,7 +19,7 @@ class Server < Sinatra::Base
     @real_problems = request_problems.select { |p| ! (p["solved"] == true or p["timeLeft"] == 0) }.sort { |a, b|
       a["size"] <=> b["size"]
     }.select {|prob| 
-      prob["size"] >= 19 and prob["size"] <= 20 and not prob["operators"].include?("fold")
+      prob["size"] >= 20 and prob["size"] <= 20 and not prob["operators"].include?("fold") and not prob["operators"].include?("bonus")
     }
   end
 
@@ -50,12 +50,16 @@ eos
   # distribute the work anew - but correctly
   get '/stay_alive/:id' do |id|
 
-
-
     # now we have to figure out when to kill the client
     worker = find_worker(id.to_i)
 
     halt 410 if worker == nil or worker.kill? # TODO problem.timeout?
+
+    if worker.assigned? and worker.task.problem.skip?
+      failed_problem!
+      worker.unassign
+    end
+
   end
 
 
