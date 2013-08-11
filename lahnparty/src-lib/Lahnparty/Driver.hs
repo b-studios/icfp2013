@@ -60,7 +60,7 @@ type GuessRequester = ProblemID -> P -> IO (Response GuessResponse)
 driver = genericDriver evalRequest guessRequest
 
 -- | Distributed driver.
-distDriver wid = genericDriver (distEvalRequest wid) (distGuessRequest wid)
+distDriver url wid = genericDriver (distEvalRequest url wid) (distGuessRequest url wid)
 
 -- | Driver that can be instantiated for single or distributed requests.
 genericDriver :: EvalRequester -> GuessRequester ->
@@ -117,7 +117,7 @@ genericDriver eval guess gen probId sizes ops = do
     return ()
   where runAgain = genericDriver eval guess gen probId sizes ops
 
-getMoreInfo guess _ [] = do
+getMoreInfo _ _ [] = do
   putStrLn "No more possible programs"
   return ()
 

@@ -29,7 +29,7 @@ data Work = Work ProblemID Size [Op] Int Int
 
 -- | Run a training worker.
 --   NOTE: The server must also be in training mode!
-runTrainWorker :: WorkerID -> IO ()
+runTrainWorker :: String -> WorkerID -> IO ()
 runTrainWorker = runWorker work
   where
     work (DistTrainingProblem prob wnum wtot) = 
@@ -38,7 +38,7 @@ runTrainWorker = runWorker work
 
 -- | Run a live worker.
 --   NOTE: The server must also be in live mode!
-runLiveWorker :: WorkerID -> IO ()
+runLiveWorker :: String -> WorkerID -> IO ()
 runLiveWorker = runWorker work
   where 
     work (DistProblem pid wnum wtot) = 
@@ -46,10 +46,10 @@ runLiveWorker = runWorker work
       in Work pid size ops wnum wtot
 
 -- | Generic worker driver.
-runWorker :: (Show a, JSON a) => (a -> Work) -> WorkerID -> IO ()
-runWorker work wid = do
+runWorker :: (Show a, JSON a) => (a -> Work) -> String -> WorkerID -> IO ()
+runWorker work url wid = do
     
-    response <- registerWorker wid
+    response <- registerWorker url wid
     print response
     
     case response of
@@ -58,7 +58,7 @@ runWorker work wid = do
         let Work pid size ops wnum wtot = work result
         let (gen, wnum', wtot') = chooseGenerator size wnum wtot
         let sizes = chooseSizeRange size wnum' wtot'
-        distDriver wid gen pid sizes ops
+        distDriver url wid gen pid sizes ops
         sleepThenTryAgain 3
       
       HTTPError (4,2,3) msg -> do
@@ -73,7 +73,7 @@ runWorker work wid = do
     sleepThenTryAgain wait = do
       putStrLn "Sleeping..."
       threadDelay (wait * 1000000)
-      runWorker work wid
+      runWorker work url wid
 
 -- TODO maybe this breaks with an odd number of workers
 chooseGenerator :: Size -> Int -> Int -> (Generator,Int,Int)
@@ -95,23 +95,33 @@ partition n ss =
 main :: IO ()
 main = do
     hSetBuffering stdout LineBuffering
-    (run,wid) <- getArgs >>= readArgs
-    run wid
+    (run,wid,url) <- getArgs >>= readArgs
+    run url wid
   where 
     
-    readArgs [s,i] = liftM2 (,) (readSet s) (readID i)
+    readArgs (r:i:args) = do
+      run <- readProbSet r
+      wid <- readID i
+      let url = case args of
+                  [p,s] -> "http://" ++ s ++ ":" ++ p ++ "/"
+                  [p]   -> "http://plse.informatik.uni-marburg.de:" ++ p ++ "/"
+                  _     -> "http://plse.informatik.uni-marburg.de:8888/"
+      putStrLn $ "Using rootURL: " ++ url
+      return (run,wid,url)
     readArgs _ = usage
     
-    readSet "live"  = return runLiveWorker
-    readSet "train" = return runTrainWorker
-    readSet _ = usage
+    readProbSet "live"  = return runLiveWorker
+    readProbSet "train" = return runTrainWorker
+    readProbSet _ = usage
     
     -- readID = maybe usage return . readMaybe
     readID = return . read
     
     usage = do 
-      putStrLn "lahnparty-run-worker {live|train} wid"
-      putStrLn "  live  - run on live problems"
-      putStrLn "  train - run on training problems"
-      putStrLn "  wid   - an integer unique to this worker"
+      putStrLn "lahnparty-run-worker {live|train} wid [port] [server]"
+      putStrLn "  live   - run on live problems"
+      putStrLn "  train  - run on training problems"
+      putStrLn "  wid    - an integer unique to this worker"
+      putStrLn "  port   - default: 8080"
+      putStrLn "  server - default: plse.informatik.uni-marburg.de"
       exitFailure

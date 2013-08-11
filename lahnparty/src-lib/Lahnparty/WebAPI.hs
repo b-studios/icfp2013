@@ -39,7 +39,7 @@ data EvalResponse =
 --     2. compute the results of a program for up to 256 arguments
 --   We implement only the first since we can compute the second on our own.
 evalRequest :: ProblemID -> [Word64] -> IO (Response EvalResponse)
-evalRequest pid vs = performRequest "eval" (EvalRequest Nothing pid vs)
+evalRequest pid vs = performRequest Nothing "eval" (EvalRequest Nothing pid vs)
 
 
 -- ** Submitting Guesses
@@ -56,7 +56,7 @@ guessRequest id = guessRequestString id . prettyP
 
 -- | Send a guess request with a program represented as a string.
 guessRequestString :: ProblemID -> String -> IO (Response GuessResponse)
-guessRequestString id s = performRequest "guess" (Guess Nothing id s)
+guessRequestString id s = performRequest Nothing "guess" (Guess Nothing id s)
 
 
 -- ** Submitting a Training Request
@@ -70,17 +70,17 @@ data TrainingProblem = TrainingProblem String ProblemID Int [String]
 
 -- | Send a request for an arbitrary training problem.
 trainRequest :: IO (Response TrainingProblem)
-trainRequest = performRequest "train" (TrainRequest Nothing Nothing)
+trainRequest = performRequest Nothing "train" (TrainRequest Nothing Nothing)
 
 -- | Send a request for a training problem of a specified size.
 trainRequestSize :: Size -> IO (Response TrainingProblem)
-trainRequestSize n = performRequest "train" (TrainRequest (Just n) Nothing)
+trainRequestSize n = performRequest Nothing "train" (TrainRequest (Just n) Nothing)
 
 -- | Send a request for a training problem of a specified size
 --   with specified ops.
 trainRequestSizeOps :: Size -> TrainOps -> IO (Response TrainingProblem)
 trainRequestSizeOps n fold =
-    performRequest "train" (TrainRequest (Just n) (Just ops))
+    performRequest Nothing "train" (TrainRequest (Just n) (Just ops))
   where ops = case fold of TrainNone  -> []
                            TrainFold  -> ["fold"]
                            TrainTFold -> ["tfold"]
@@ -97,20 +97,20 @@ data DistTrainingProblem = DistTrainingProblem TrainingProblem Int Int
   deriving (Eq,Show)
 
 -- | Register as a worker.
-registerWorker :: JSON a => WorkerID -> IO (Response a)
-registerWorker = performRequest "register" . RegisterRequest
+registerWorker :: JSON a => String -> WorkerID -> IO (Response a)
+registerWorker url = performRequest (Just url) "register" . RegisterRequest
 
 -- | Send an evaluation request as a distributed worker.
-distEvalRequest :: WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
-distEvalRequest wid pid vs = performRequest "eval" (EvalRequest (Just wid) pid vs)
+distEvalRequest :: String -> WorkerID -> ProblemID -> [Word64] -> IO (Response EvalResponse)
+distEvalRequest url wid pid vs = performRequest (Just url) "eval" (EvalRequest (Just wid) pid vs)
 
 -- | Send a guess request as a distributed worker.
-distGuessRequest :: WorkerID -> ProblemID -> P -> IO (Response GuessResponse)
-distGuessRequest wid pid = distGuessRequestString wid pid . prettyP
+distGuessRequest :: String -> WorkerID -> ProblemID -> P -> IO (Response GuessResponse)
+distGuessRequest url wid pid = distGuessRequestString url wid pid . prettyP
 
 -- | Send a guess request with a program represented as a string.
-distGuessRequestString :: WorkerID -> ProblemID -> String -> IO (Response GuessResponse)
-distGuessRequestString wid pid s = performRequest "guess" (Guess (Just wid) pid s)
+distGuessRequestString :: String -> WorkerID -> ProblemID -> String -> IO (Response GuessResponse)
+distGuessRequestString url wid pid s = performRequest (Just url) "guess" (Guess (Just wid) pid s)
 
 
 --
@@ -328,15 +328,15 @@ instance JSON DistTrainingProblem where
 
 -- ** HTTP Support Code
 
--- urlRoot = "http://icfpc2013.cloudapp.net/"
+urlRoot = "http://icfpc2013.cloudapp.net/"
 -- urlRoot = "http://192.168.2.106:3000/"
-urlRoot = "http://plse.informatik.uni-marburg.de:8888/"
+-- urlRoot = "http://plse.informatik.uni-marburg.de:8888/"
 secret  = "02768XDijvjky5OOedNdAnRxokV6hSA8aaFT1doK"
 
 -- | Send an HTTP request.
 --   Clients should use `evalRequest` or `guessRequest`.
-performRequest :: (JSON a, JSON b) => String -> a -> IO (Response b)
-performRequest path request = do
+performRequest :: (JSON a, JSON b) => Maybe String -> String -> a -> IO (Response b)
+performRequest maybeRoot path request = do
     result <- simpleHTTP $ postRequestWithBody url "application/json" (encode request)
     case result of
       Left err -> return (ConnectionError (show err))
@@ -345,7 +345,7 @@ performRequest path request = do
         else case decode body of
                Ok a      -> OK a
                Error msg -> JSONError msg
-  where url = urlRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
+  where url = maybe urlRoot id maybeRoot ++ path ++ "?auth=" ++ secret ++ "vpsH1H"
 
 
 -- ** Test Code
