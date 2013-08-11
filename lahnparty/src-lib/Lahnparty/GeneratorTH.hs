@@ -1,6 +1,7 @@
 module Lahnparty.GeneratorTH where
 
 import Lahnparty.Language
+import Lahnparty.LanguageUtils
 import Lahnparty.Types
 import Data.List(delete)
 import Data.Word (Word64)
@@ -12,29 +13,6 @@ type Argument = Word64
 type Result = Word64
 type InFold = Bool
 type MustFold = Bool
-
-isOp1 :: Op -> Bool
-isOp1 (OpOp1 _) = True
-isOp1 _ = False
-
-isOp2 :: Op -> Bool
-isOp2 (OpOp2 _) = True
-isOp2 _ = False
-
-isOp3 :: Op -> Bool
-isOp3 OpIf0 = True
-isOp3 OpFold = True
-isOp3 _ = False
-
-arity :: Op -> Int
-arity (OpOp1 _) = 1
-arity (OpOp2 _) = 2
-arity (OpIf0) = 3
-arity (OpFold) = 3
-
-weight :: Op -> Int
-weight (OpFold) = 2
-weight _ = 1
 
 
 generate :: Int -> [Op] -> [(Argument, Result)] -> [P]
