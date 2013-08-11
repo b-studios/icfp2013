@@ -76,7 +76,7 @@ adjustForFst k _ = emptyKnowledge
 
 
 adjustForSnd :: Knowledge -> Op -> E -> Knowledge
-adjustForSnd _ (OpOp2 Plus) _ = emptyKnowledge
+-- adjustForSnd _ (OpOp2 Plus) _ = emptyKnowledge
 adjustForSnd k op e = --old: adjustForFst k op -- #todo: partial evaluate E and use that info! --done!
                       V.map (adjustForSnd' op e) k -- #todo: delete empty KnownPoints ( where mask is 0)
 
@@ -94,7 +94,9 @@ adjustForSnd' (OpOp2 Plus) e p@(Know m a r)  = let p1 @ (Know m1 _ v1) = evalPar
                                                    hasNoCarryMask = r .&. (complement v1)
                                                    carryMask = (shiftL (hasCarryMask .|. hasNoCarryMask) 1) .|. 1
                                                    carryVal = shiftL hasCarryMask 1
-                                                   finalCarry = computeCarry p1 (Know carryMask 0 carryVal) p
+                                                   finalCarry =
+                                                     Know carryMask 0 carryVal
+                                                     -- computeCarry p1 (Know carryMask 0 carryVal) p
                                                in computeV2 p1 finalCarry p
 
 computeV2 :: KnownPoint -> KnownPoint -> KnownPoint -> KnownPoint
