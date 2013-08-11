@@ -15,8 +15,15 @@ class Server < Sinatra::Base
 
   PRODUCTION = true
 
-  # Server
+  def initialize
+    @real_problems = request_problems.select { |p| ! (p["solved"] == true) }.sort { |a, b|
+      a["size"] - b["size"]
+    }.select {|prob| 
+      prob["size"] < 5
+    }
+  end
 
+  
   # problem that is currently being worked on
   $current_problem = nil
 
@@ -104,7 +111,7 @@ eos
           worker.unassign
 
         when 412
-          $current_problem.solved!
+          solved_problem!
           worker.unassign
 
         when 429
@@ -144,7 +151,7 @@ eos
         worker.unassign
 
       when 412
-        $current_problem.solved!
+        solved_problem!
         worker.unassign
 
       when 429
@@ -161,10 +168,8 @@ eos
     if result['status'] == "win"
       puts "We won! #{guess_request["id"]} #{guess_request["program"]}"
 
-      $current_problem.solved!
+      solved_problem!
       worker.unassign
-
-      $old_problems << $current_problem
 
       $current_problem = nil
 
@@ -177,6 +182,11 @@ eos
 
   private
 
+  def solved_problem!
+    $current_problem.solved!
+    $old_problems << $current_problem
+    $old_problems.uniq!
+  end
 
   def check_preconditions_for(worker)
     # we abuse this for already solved and failed
@@ -214,16 +224,10 @@ eos
 
     # production one
     if PRODUCTION
-      prob = request_problems.select { |p| ! (p["solved"] == true) }.sort { |a, b|
-        a["size"] - b["size"]
-      }.select {|prob| 
-        prob["size"] < 5
-      }.first
-
+      prob = @real_problems.unshift
       halt 404 if prob == nil
 
       Problem.new(prob)
-    # => maybe sqlite, or by hand
 
     # test one
 =begin
