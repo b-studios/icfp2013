@@ -2,6 +2,7 @@ module Main where
 
 import Lahnparty.GeneratorTH2
 import Lahnparty.Language
+import Lahnparty.Types
 
 import Control.Monad(when)
 import qualified Data.Vector as V
@@ -20,11 +21,12 @@ nofoldops = [OpOp1 Not,
 
 knowledge = V.fromList [know 0 1, know 1 0]
 
+programs :: [Size] -> [P]
 programs size = findP size nofoldops knowledge
                 ++ findP size (OpFold:nofoldops) knowledge
 
 main = do
          args <- getArgs
-         when (null args) $ print "usage: program size"
+         when (null args) $ print "usage: program sizes"
          let size = read $ head args
          print $ length $ programs size
