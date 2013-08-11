@@ -107,7 +107,7 @@ eos
 
         case code
         when 410
-          $current_problem.failed!
+          failed_problem!
           worker.unassign
 
         when 412
@@ -147,7 +147,7 @@ eos
 
       case code
       when 410
-        $current_problem.failed!
+        failed_problem!
         worker.unassign
 
       when 412
@@ -171,8 +171,6 @@ eos
       solved_problem!
       worker.unassign
 
-      $current_problem = nil
-
     else
       puts "Wrong guess #{guess_request["id"]} #{guess_request["program"]}"
     end
@@ -186,6 +184,14 @@ eos
     $current_problem.solved!
     $old_problems << $current_problem
     $old_problems.uniq!
+    $current_problem = nil
+  end
+
+  def failed_problem!
+    $current_problem.failed!
+    $old_problems << $current_problem
+    $old_problems.uniq!
+    $current_problem = nil
   end
 
   def check_preconditions_for(worker)
