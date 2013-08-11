@@ -33,7 +33,7 @@ class Server < Sinatra::Base
   <h2>Current problem:</h2>
   <pre>#{$current_problem}</pre>
   <h2>Old problems:</h2>
-  <ul>#{ $old_problems.map {|p| "<li><pre>#{p}</pre></li>" }.join("\n") }</ul>
+  <ul>#{ $old_problems.map {|p| "<li><pre>#{p.id} #{p.size}</pre></li>" }.join("\n") }</ul>
   <script>window.onload = function() { window.setInterval(function() { window.location.reload() }, 1500) }</script>
 eos
   end
