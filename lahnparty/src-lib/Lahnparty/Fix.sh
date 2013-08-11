@@ -10,5 +10,6 @@ sed -e \
   s/"shr16"/OpOp1 Shr16/g;
   s/"if0"/OpIf0/g;
   s/"fold"/OpFold/g;
-  s/"tfold"/OpTFold/g;' \
+  s/"tfold"/OpTFold/g;
+  s/"bonus", //g;' \
   ProblemsDB.hs
