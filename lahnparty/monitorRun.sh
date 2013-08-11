@@ -55,4 +55,4 @@ runSubProcess() {
 cd "$(dirname "$0")"
 exe=./dist/build/lahnparty-run-worker/lahnparty-run-worker
 # This runs the Haskell executable with the given ID.
-runSubProcess ${exe} train ${id}
+runSubProcess ${exe} live ${id}
