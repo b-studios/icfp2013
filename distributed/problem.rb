@@ -4,7 +4,7 @@ require_relative 'task.rb'
 
 class Problem
 
-  WORKERS_NEEDED = 3
+  WORKERS_NEEDED = 17
 
   TIMEOUT = 30
 
